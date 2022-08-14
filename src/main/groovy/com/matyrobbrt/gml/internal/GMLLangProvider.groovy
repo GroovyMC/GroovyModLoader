@@ -25,6 +25,7 @@
 package com.matyrobbrt.gml.internal
 
 import com.matyrobbrt.gml.GMod
+import com.matyrobbrt.gml.mappings.MappingsProvider
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.forgespi.language.ILifecycleEvent
@@ -39,6 +40,10 @@ import java.util.function.Supplier
 @CompileStatic
 final class GMLLangProvider implements IModLanguageProvider {
     private static final Type GMOD_TYPE = Type.getType(GMod)
+
+    GMLLangProvider() {
+        MappingsProvider.INSTANCE.startMappingsSetup()
+    }
 
     @Override
     String name() {

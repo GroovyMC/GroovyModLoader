@@ -157,7 +157,7 @@ dependencies {
 }
 
 String groovyDep(String name) {
-    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}:$groovy_version"
+    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}:${project.groovy_version}"
 }
 
 tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
