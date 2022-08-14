@@ -136,20 +136,28 @@ repositories {
     }
 }
 
+jarJar.enable()
+
+final groovyLibs = [
+        'stdlib', 'contracts', 'datetime',
+        'nio', 'macro', 'macro-library',
+        'templates', 'typecheckers'
+]
+
 dependencies {
     minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
 
-    groovy("org.apache.groovy:groovy-all:$groovy_version") {
-        exclude module: 'groovy-cli-picocli'
-        exclude module: 'groovy-groovysh'
-        exclude module: 'asm'
-        exclude module: 'asm-tree'
-        exclude module: 'asm-util'
+    groovyLibs.each {
+        groovy groovyDep(it)
     }
 
     transformCompileOnly sourceSets.main.output
 
     testCompileOnly sourceSets.main.output
+}
+
+String groovyDep(String name) {
+    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}:$groovy_version"
 }
 
 tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
@@ -167,12 +175,6 @@ final manifestAttr = [
        'FMLModType' : 'LIBRARY',
        'Implementation-Version': project.version
 ]
-
-processResources {
-    doLast {
-        makeJarJar(project.file("$buildDir/resources/main/META-INF/jarjar/metadata.json"))
-    }
-}
 
 tasks.create('testJar', Jar) {
     group 'build'
@@ -220,9 +222,16 @@ tasks.create('fullJar', Jar) {
         into 'META-INF/jarjar'
         rename groovyJar.archiveName as String, 'groovy.jar'
     }
+    final path = project.file("$buildDir/jarjar/metadata.json")
+    doFirst {
+        makeJarJar(path)
+    }
+    from(path) {
+        into 'META-INF/jarjar'
+    }
 }
 
-private static void makeJarJar(File path) {
-    final groovy = JiJUtils.makeJarJson('org.apache.groovy', 'groovy', '4.0.4', 'groovy.jar')
+private void makeJarJar(File path) {
+    final groovy = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'groovy-homebaked', project.groovy_version, 'groovy.jar')
     JiJUtils.writeJiJ(path, groovy)
 }
