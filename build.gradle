@@ -1,3 +1,4 @@
+import io.github.groovymc.modsdotgroovy.ConvertToTomlTask
 import groovy.transform.CompileStatic
 import org.w3c.dom.Document
 import org.w3c.dom.Element
@@ -9,11 +10,12 @@ plugins {
     id 'net.minecraftforge.gradle' version '5.1.+'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
-    id 'io.github.groovymc.modsdotgroovy' version '1.0.2'
+    id 'io.github.groovymc.modsdotgroovy' version '1.0.4'
 }
 
 modsDotGroovy {
     dslVersion = '1.0.2' // Can be replaced with any existing DSL version
+    automaticConfiguration = false
 }
 
 archivesBaseName = 'gml'
@@ -33,11 +35,13 @@ configurations {
     compileOnly.extendsFrom(globalCompile)
     transformCompileOnly.extendsFrom(globalCompile)
     testCompileOnly.extendsFrom(globalCompile)
+    modCompileOnly.extendsFrom(globalCompile)
 
     globalAP
     annotationProcessor.extendsFrom(globalAP)
     transformAnnotationProcessor.extendsFrom(globalAP)
     testAnnotationProcessor.extendsFrom(globalAP)
+    modAnnotationProcessor.extendsFrom(globalAP)
 
     groovy
     globalCompile.extendsFrom(groovy)
@@ -53,7 +57,18 @@ sourceSets {
     test {
         compileClasspath += transform.output
     }
+    mod {
+        compileClasspath += transform.output
+        compileClasspath += configurations.getByName('minecraft')
+    }
 }
+tasks.create('testModsDotGroovyToToml', ConvertToTomlTask) {
+    it.configureForSourceSet(sourceSets.test)
+}
+tasks.create('modModsDotGroovyToToml', ConvertToTomlTask) {
+    it.configureForSourceSet(sourceSets.mod)
+}
+
 tasks.create('groovyJar', ManifestTransformingJiJ)
 
 // GML is written in pure Groovy, so delete the empty java folder in each of the sourceSets
@@ -91,6 +106,8 @@ dependencies {
 
     testCompileOnly sourceSets.main.output
     testCompileOnly modsDotGroovy.mdgDsl()
+
+    modCompileOnly sourceSets.main.output
 }
 
 String groovyDep(String name) {
@@ -155,6 +172,12 @@ tasks.named('groovyJar', ManifestTransformingJiJ).configure {
     setUpperBound('com.fasterxml.jackson.dataformat:jackson-dataformat-toml', '3.0.0')
 }
 
+tasks.create('modJar', Jar) {
+    from sourceSets.mod.output
+    manifest.attributes(manifestAttr)
+    classifier 'mod'
+}
+
 tasks.create('fullJar', Jar) {
     from sourceSets.main.output
     from sourceSets.transform.output
@@ -163,12 +186,21 @@ tasks.create('fullJar', Jar) {
     ])
     archiveClassifier.set 'all'
     group 'build'
+
     dependsOn(groovyJar)
     final File groovyOut = groovyJar.output.get().asFile
     from(groovyOut) {
         into 'META-INF/jarjar'
         rename groovyOut.name, 'groovy.jar'
     }
+
+    dependsOn(modJar)
+    final File modOut = modJar.archiveFile.get().asFile
+    from(modOut) {
+        into 'META-INF/jarjar'
+        rename modOut.name, 'mod.jar'
+    }
+
     final path = project.file("$buildDir/jarjar/metadata.json")
     doFirst {
         makeJarJar(path)
@@ -207,7 +239,8 @@ tasks.create('transformSources', Jar) {
 private void makeJarJar(File path) {
     final groovy = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'groovy-fat', project.groovy_version, 'groovy.jar',
         "[$groovy_version,$groovy_next_major)")
-    JiJUtils.writeJiJ(path, groovy)
+    final mod = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'mod', project.version.toString(), 'mod.jar', "[$version,)")
+    JiJUtils.writeJiJ(path, groovy, mod)
 }
 
 static String getGitCommit() {
