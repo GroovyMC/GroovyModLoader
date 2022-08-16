@@ -25,11 +25,13 @@
 //file:noinspection GrMethodMayBeStatic
 package com.matyrobbrt.gml.transform.gmods
 
+import com.matyrobbrt.gml.GMod
 import com.matyrobbrt.gml.transform.api.GModTransformer
 import groovy.transform.CompileStatic
 import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.AnnotatedNode
 import org.codehaus.groovy.ast.AnnotationNode
+import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
@@ -40,6 +42,7 @@ import org.codehaus.groovy.transform.TransformWithPriority
 @CompileStatic
 @GroovyASTTransformation(phase = CompilePhase.CANONICALIZATION)
 class GModASTTransformer extends AbstractASTTransformation implements TransformWithPriority {
+    private static final ClassNode GMOD = ClassHelper.make(GMod)
     private static final List<GModTransformer> TRANSFORMERS = []
     static {
         TRANSFORMERS.addAll(ServiceLoader.load(GModTransformer, GModASTTransformer.class.classLoader))
@@ -56,7 +59,8 @@ class GModASTTransformer extends AbstractASTTransformation implements TransformW
         final node = nodes[1] as AnnotatedNode
         if (!(node instanceof ClassNode)) throw new IllegalArgumentException('@GMod annotation can only be applied to classes!')
         final cNode = node as ClassNode
-        TRANSFORMERS.each { it.transform(cNode, annotation, source) }
+        final actualAnnotation = cNode.annotations.find { it.classNode == GMOD }
+        TRANSFORMERS.each { it.transform(cNode, actualAnnotation, source) }
     }
 
     @Override
