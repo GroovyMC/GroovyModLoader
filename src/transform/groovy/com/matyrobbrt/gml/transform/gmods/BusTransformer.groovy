@@ -22,40 +22,31 @@
  * SOFTWARE.
  */
 
-package testmod
+package com.matyrobbrt.gml.transform.gmods
 
-import com.matyrobbrt.gml.BaseGMod
-import com.matyrobbrt.gml.GMLModLoadingContext
-import com.matyrobbrt.gml.GMod
-import com.matyrobbrt.gml.bus.EventBusSubscriber
-import com.matyrobbrt.gml.bus.type.ModBus
+import com.matyrobbrt.gml.bus.GModEventBus
+import com.matyrobbrt.gml.transform.api.GModTransformer
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.ModLoadingContext
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
+import net.minecraftforge.common.MinecraftForge
+import net.minecraftforge.eventbus.api.IEventBus
+import org.codehaus.groovy.ast.AnnotationNode
+import org.codehaus.groovy.ast.ClassHelper
+import org.codehaus.groovy.ast.ClassNode
+import org.codehaus.groovy.ast.tools.GeneralUtils
+import org.codehaus.groovy.control.SourceUnit
+import org.objectweb.asm.Opcodes
 
-@Slf4j
 @CompileStatic
-@GMod('testmod')
-@EventBusSubscriber(ModBus)
-class TestMod implements BaseGMod {
-    TestMod() {
-        this('hi')
-    }
-
-    TestMod(String shush) {
-        this(shush, 15)
-    }
-
-    TestMod(String shush, int val) {
-        println shush
-        println val + 12
-    }
-
-    @SubscribeEvent
-    static void yes(final FMLCommonSetupEvent e) {
-        log.warn('HI FROM COMMON SETUP!')
-        System.exit(0)
+ final class BusTransformer implements GModTransformer {
+    @Override
+    void transform(ClassNode classNode, AnnotationNode annotationNode, SourceUnit source) {
+        classNode.addProperty(
+                'modBus', Opcodes.ACC_PUBLIC, ClassHelper.make(GModEventBus),
+                null, null, null
+        )
+        classNode.addProperty(
+                'forgeBus', Opcodes.ACC_PUBLIC, ClassHelper.make(IEventBus),
+                GeneralUtils.propX(GeneralUtils.classX(MinecraftForge), 'EVENT_BUS'), null, null
+        )
     }
 }
