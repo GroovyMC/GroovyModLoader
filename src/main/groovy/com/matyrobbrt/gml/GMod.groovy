@@ -27,6 +27,10 @@ package com.matyrobbrt.gml
 import groovy.transform.CompileStatic
 import org.codehaus.groovy.transform.GroovyASTTransformationClass
 
+/**
+ * This annotation defines a GML mod. <br>
+ * Any class found with this annotation applied will be loaded as a Mod. The instance that is loaded will represent the mod to other Mods in the system. It will be sent various subclasses of ModLifecycleEvent at pre-defined times during the loading of the game.
+ */
 @CompileStatic
 @GroovyASTTransformationClass(value = 'com.matyrobbrt.gml.transform.GModASTTransformer')
 @interface GMod {

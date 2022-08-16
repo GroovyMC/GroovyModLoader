@@ -68,7 +68,7 @@ final class GModContainer extends ModContainer {
 
         activityMap[ModLoadingStage.CONSTRUCT] = this.&constructMod
         this.configHandler = Optional.of(this::postConfigEvent as Consumer<IConfigEvent>)
-        this.contextExtension = { null }
+        this.contextExtension = { new GMLModLoadingContext(this) }
 
         modBus = new GModEventBus(BusBuilder.builder()
                 .setExceptionHandler {bus, event, listeners, i, cause -> log.error('Failed to process mod event: {}', new EventBusErrorMessage(event, i, listeners, cause)) }
@@ -94,8 +94,13 @@ final class GModContainer extends ModContainer {
         }
     }
 
+    private boolean setup = false
+    @SuppressWarnings('unused') // A transformer will call this method
     void setupMod(Object mod) {
-        injectBus(mod)
+        if (!setup) {
+            injectBus(mod)
+            setup = true
+        }
     }
 
     @CompileDynamic

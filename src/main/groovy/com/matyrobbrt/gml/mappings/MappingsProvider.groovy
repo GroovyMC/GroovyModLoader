@@ -70,6 +70,10 @@ class MappingsProvider {
     private boolean setup = false
 
     private MappingsProvider() {
+        try (final is = getClass().getResourceAsStream('/mod_data_readme.txt')) {
+            Files.createDirectories(cacheDir)
+            Files.write(cacheDir.resolve('README'), is.readAllBytes())
+        }
     }
 
     private Thread setupMappingsThread(Runnable runnable) {

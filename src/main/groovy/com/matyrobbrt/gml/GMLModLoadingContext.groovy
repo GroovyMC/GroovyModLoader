@@ -22,41 +22,45 @@
  * SOFTWARE.
  */
 
-package testmod
+//file:noinspection unused
+package com.matyrobbrt.gml
 
-import com.matyrobbrt.gml.BaseGMod
-import com.matyrobbrt.gml.GMLModLoadingContext
-import com.matyrobbrt.gml.GMod
-import com.matyrobbrt.gml.bus.EventBusSubscriber
-import com.matyrobbrt.gml.bus.type.ModBus
+import com.matyrobbrt.gml.bus.GModEventBus
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import net.minecraftforge.eventbus.api.SubscribeEvent
+import groovy.transform.PackageScope
+import groovy.transform.PackageScopeTarget
 import net.minecraftforge.fml.ModLoadingContext
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
 
-@Slf4j
 @CompileStatic
-@GMod('testmod')
-@EventBusSubscriber(ModBus)
-class TestMod implements BaseGMod {
-    TestMod() {
-        this('hi')
+@PackageScope([PackageScopeTarget.CONSTRUCTORS])
+class GMLModLoadingContext {
+
+    private final GModContainer container
+
+    GMLModLoadingContext(GModContainer container) {
+        this.container = container
     }
 
-    TestMod(String shush) {
-        this(shush, 15)
+    /**
+     * @return the mod's event bus, to allow subscription to mod-specific events
+     */
+    GModEventBus getModEventBus() {
+        return container.modBus
     }
 
-    TestMod(String shush, int val) {
-        println shush
-        println val + 12
+    /**
+     * @return the mod's container
+     */
+    GModContainer getContainer() {
+        return container
     }
 
-
-    @SubscribeEvent
-    static void yes(final FMLCommonSetupEvent e) {
-        log.warn('HI FROM COMMON SETUP!')
-        System.exit(0)
+    /**
+     * Helper to get the right instance from the {@link net.minecraftforge.fml.ModLoadingContext} correctly.
+     * @return The GMLMod language specific extension from the ModLoadingContext
+     */
+    static GMLModLoadingContext get() {
+        return ModLoadingContext.get().extension()
     }
+
 }

@@ -55,17 +55,18 @@ class MappingMetaClassCreationHandle extends MetaClassRegistry.MetaClassCreation
         return null
     }
 
-    private shouldWrap(Class clazz) {
-        if (clazz == null)
+    private boolean shouldWrap(Class clazz) {
+        if (clazz === null)
             return false
-        if (mappings.mappable.contains(clazz.name))
+        if (mappings.getMappable().contains(clazz.getName()))
             return true
-        if (shouldWrap(clazz.superclass))
+        if (shouldWrap(clazz.getSuperclass()))
             return true
-        for (Class aClass : clazz.interfaces) {
+        for (Class aClass : clazz.getInterfaces()) {
             if (shouldWrap(aClass))
                 return true
         }
+        return false
     }
 
     static synchronized applyCreationHandle(LoadedMappings mappings, ClassLoader loader) {

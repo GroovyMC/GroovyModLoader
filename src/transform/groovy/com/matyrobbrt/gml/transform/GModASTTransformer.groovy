@@ -25,13 +25,19 @@
 //file:noinspection GrMethodMayBeStatic
 package com.matyrobbrt.gml.transform
 
+import com.matyrobbrt.gml.GMLModLoadingContext
 import com.matyrobbrt.gml.GModContainer
 import com.matyrobbrt.gml.bus.GModEventBus
 import com.matyrobbrt.gml.transform.api.GModTransformer
+import com.matyrobbrt.gml.transform.api.ModRegistry
 import groovy.transform.CompileStatic
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.eventbus.api.IEventBus
 import org.codehaus.groovy.ast.*
+import org.codehaus.groovy.ast.expr.ConstantExpression
+import org.codehaus.groovy.ast.expr.ConstructorCallExpression
+import org.codehaus.groovy.ast.expr.Expression
+import org.codehaus.groovy.ast.expr.PropertyExpression
 import org.codehaus.groovy.ast.stmt.BlockStatement
 import org.codehaus.groovy.ast.stmt.ExpressionStatement
 import org.codehaus.groovy.ast.tools.GeneralUtils
@@ -53,7 +59,19 @@ class GModASTTransformer extends AbstractASTTransformation {
         final node = nodes[1] as AnnotatedNode
         if (!(node instanceof ClassNode)) throw new IllegalArgumentException('@GMod annotation can only be applied to classes!')
         final cNode = node as ClassNode
+        // noinspection UnnecessaryQualifiedReference
+        ModRegistry.register(cNode.packageName, new ModRegistry.ModData(cNode.name, GModASTTransformer.<String>getMemberPropertyValue(annotation, 'value')))
         ServiceLoader.load(GModTransformer, getClass().classLoader).each { it.transform(cNode, annotation, source) }
+    }
+
+    private static <T> T getMemberPropertyValue(AnnotationNode annotation, String memberName, T defaultValue = null) {
+        final Expression member = annotation.getMember(memberName)
+        if (member instanceof PropertyExpression) {
+            if (member.property !== null) {
+                return (member.property as ConstantExpression).value as T
+            }
+        }
+        return defaultValue
     }
 
     @CompileStatic
@@ -76,25 +94,31 @@ class GModASTTransformer extends AbstractASTTransformation {
 
         @Override
         void transform(ClassNode classNode, AnnotationNode annotationNode, SourceUnit source) {
-            ConstructorNode ctor = classNode.declaredConstructors.find {it.parameters.length == 0}
-            if (ctor != null) {
-                ctor.setParameters(new Parameter[] {
-                        new Parameter(GMOD_CONTAINER, 'container')
-                })
-
-                ctor.setCode(GeneralUtils.block(
-                        (ctor.getCode() as BlockStatement).variableScope,
-                        new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX('container'), 'setupMod', GeneralUtils.varX('this'))),
-                        ctor.getCode()
-                ))
-            } else {
-                ctor = classNode.declaredConstructors.find { it.parameters.any { it.type == GMOD_CONTAINER }}
-                final param = ctor.parameters.find { it.type == GMOD_CONTAINER }
-                ctor.setCode(GeneralUtils.block(
-                        (ctor.getCode() as BlockStatement).variableScope,
-                        new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX(param.name), 'setupMod', GeneralUtils.varX('this'))),
-                        ctor.getCode()
-                ))
+            classNode.declaredConstructors.each {
+                final code = it.code as BlockStatement
+                final callsAnotherCtor = code.statements.any {
+                    if (it instanceof ExpressionStatement) {
+                        final expr = it.expression
+                        if (expr instanceof ConstructorCallExpression) {
+                            return expr.isThisCall() || expr.isSpecialCall()
+                        }
+                    }
+                    return false
+                }
+                // We ONLY want to insert the setupMod in constructors that do not call others
+                if (!callsAnotherCtor) {
+                    it.setCode(GeneralUtils.block(
+                            code.variableScope,
+                            new ExpressionStatement(
+                                    GeneralUtils.callX(
+                                            (GeneralUtils.callX(ClassHelper.make(GMLModLoadingContext), 'get')),
+                                            'setupMod',
+                                            GeneralUtils.varX('this')
+                                    )
+                            ),
+                            code
+                    ))
+                }
             }
         }
     }

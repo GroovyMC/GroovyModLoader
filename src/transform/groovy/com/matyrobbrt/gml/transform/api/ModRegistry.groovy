@@ -22,41 +22,34 @@
  * SOFTWARE.
  */
 
-package testmod
+package com.matyrobbrt.gml.transform.api
 
-import com.matyrobbrt.gml.BaseGMod
-import com.matyrobbrt.gml.GMLModLoadingContext
-import com.matyrobbrt.gml.GMod
-import com.matyrobbrt.gml.bus.EventBusSubscriber
-import com.matyrobbrt.gml.bus.type.ModBus
+import com.matyrobbrt.gml.transform.GModASTTransformer
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
-import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.ModLoadingContext
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
 
-@Slf4j
-@CompileStatic
-@GMod('testmod')
-@EventBusSubscriber(ModBus)
-class TestMod implements BaseGMod {
-    TestMod() {
-        this('hi')
+import javax.annotation.Nullable
+
+class ModRegistry {
+    private static final Map<String, ModData> REGISTRY = [:]
+
+    @Nullable
+    static ModData getData(String packageName) {
+        ModData found = REGISTRY[packageName]
+        if (found !== null) return found
+        final split = packageName.split('\\.').toList()
+        for (int i = split.size() - 1; i >= 0; i--) {
+            found = REGISTRY[split.subList(0, i).join('.')]
+            if (found !== null) return found
+        }
+        return found
     }
 
-    TestMod(String shush) {
-        this(shush, 15)
+    static void register(String packageName, ModData modData) {
+        if (StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass() == GModASTTransformer) {
+            REGISTRY[packageName] = modData
+        }
     }
 
-    TestMod(String shush, int val) {
-        println shush
-        println val + 12
-    }
-
-
-    @SubscribeEvent
-    static void yes(final FMLCommonSetupEvent e) {
-        log.warn('HI FROM COMMON SETUP!')
-        System.exit(0)
-    }
+    @CompileStatic
+    static record ModData(String className, String modId) {}
 }
