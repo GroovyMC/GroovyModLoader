@@ -11,6 +11,7 @@ ModsDotGroovy.make {
         displayName = 'GroovyModLoader'
         version = this.version
         description = 'A mod loader for Groovy mods'
+        logoFile = 'gml.png'
 
         dependencies {
             forge = "[${this.forgeVersion},)"

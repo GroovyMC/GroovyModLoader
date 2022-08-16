@@ -36,6 +36,7 @@ configurations {
     transformCompileOnly.extendsFrom(globalCompile)
     testCompileOnly.extendsFrom(globalCompile)
     modCompileOnly.extendsFrom(globalCompile)
+    extensionCompileOnly.extendsFrom(globalCompile)
 
     globalAP
     annotationProcessor.extendsFrom(globalAP)
@@ -57,7 +58,13 @@ sourceSets {
     test {
         compileClasspath += transform.output
     }
+    extension {
+        compileClasspath += configurations.getByName('minecraft')
+    }
     mod {
+        groovy {
+            compileClasspath += extension.output
+        }
         compileClasspath += transform.output
         compileClasspath += configurations.getByName('minecraft')
     }
@@ -182,6 +189,7 @@ tasks.create('modJar', Jar) {
 tasks.create('fullJar', Jar) {
     from sourceSets.main.output
     from sourceSets.transform.output
+    from sourceSets.extension.output
     manifest.attributes(manifestAttr + [
             'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
     ])
@@ -212,6 +220,7 @@ tasks.create('fullJar', Jar) {
 }
 
 jar {
+    from sourceSets.extension.output
     manifest.attributes(manifestAttr + [
             'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
     ])

@@ -22,18 +22,20 @@
  * SOFTWARE.
  */
 
-package com.matyrobbrt.gml.mod
+package com.matyrobbrt.gml.extensions
 
-import com.matyrobbrt.gml.BaseGMod
-import com.matyrobbrt.gml.GMod
 import groovy.transform.CompileStatic
-import groovy.util.logging.Slf4j
+import groovy.transform.stc.ClosureParams
+import groovy.transform.stc.FirstParam
+import net.minecraftforge.eventbus.api.Event
+import net.minecraftforge.eventbus.api.EventPriority
+import net.minecraftforge.eventbus.api.IEventBus
 
-@GMod('gml')
 @CompileStatic
-@Slf4j(category = 'gml')
-final class GMLMod implements BaseGMod {
-    GMLMod() {
-        log.info('Initialised GML mod. Version: {}', getClass().getPackage().implementationVersion)
+class EventBusExtensions {
+    static <T extends Event> void addListener(IEventBus self,
+                                              @ClosureParams(value = FirstParam.FirstGenericType) Closure closure,
+                                              EventPriority priority = EventPriority.NORMAL, boolean receiveCancelled = false) {
+        self.<T>addListener(priority, receiveCancelled, ev -> closure.call(ev))
     }
 }
