@@ -145,7 +145,7 @@ final class GModContainer extends ModContainer {
 
     private static <T extends Enum<T>> Set<T> enumValues(final ModFileScanData.AnnotationData data, final String name, final Class<T> clazz) {
         final List<ModAnnotation.EnumHolder> declaredHolders = data.annotationData()[name] as List<ModAnnotation.EnumHolder>
-        final List<ModAnnotation.EnumHolder> holders = declaredHolders ?: (this.&makeDefaultHolders)(clazz)
+        final List<ModAnnotation.EnumHolder> holders = declaredHolders ?: makeDefaultHolders(clazz)
         holders.collect { Enum.valueOf(clazz, it.value) }.toSet()
     }
 
