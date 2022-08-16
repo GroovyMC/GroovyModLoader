@@ -102,7 +102,7 @@ class GModASTTransformer extends AbstractASTTransformation implements TransformW
                             code.variableScope,
                             new ExpressionStatement(
                                     GeneralUtils.callX(
-                                            (GeneralUtils.callX(ClassHelper.make(GMLModLoadingContext), 'get')),
+                                            GeneralUtils.callX(GeneralUtils.callX(ClassHelper.make(GMLModLoadingContext), 'get'), 'getContainer'),
                                             'setupMod',
                                             GeneralUtils.varX('this')
                                     )
