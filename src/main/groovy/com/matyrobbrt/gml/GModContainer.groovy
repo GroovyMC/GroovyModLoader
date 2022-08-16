@@ -28,6 +28,7 @@ import com.matyrobbrt.gml.bus.EventBusSubscriber
 import com.matyrobbrt.gml.bus.GModEventBus
 import com.matyrobbrt.gml.bus.type.ForgeBus
 import com.matyrobbrt.gml.bus.type.ModBus
+import com.matyrobbrt.gml.util.Environment
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -126,9 +127,10 @@ final class GModContainer extends ModContainer {
 
                 if (!isInMod) return
                 final bus = it.annotationData()['value'] as Type
-                final dists = dists(it)
+                final dists = enumValues(it, 'dist', Dist)
+                final envs = enumValues(it, 'environment', Environment)
 
-                if (FMLEnvironment.dist in dists) {
+                if (FMLEnvironment.dist in dists && Environment.current() in envs) {
                     log.info('Auto-Subscribing EBS class {} to bus {}', it.clazz().className, bus)
                     (switch (bus) {
                         case FORGE_EBS -> MinecraftForge.EVENT_BUS
@@ -141,15 +143,14 @@ final class GModContainer extends ModContainer {
         log.debug('Registered EventBusSubscribers for mod {}', modId)
     }
 
-    @CompileDynamic
-    private static Set<Dist> dists(final ModFileScanData.AnnotationData data) {
-        final List<ModAnnotation.EnumHolder> declaredHolders = data.annotationData()['dist'] as List<ModAnnotation.EnumHolder>
-        final List<ModAnnotation.EnumHolder> holders = declaredHolders ?: (this.&makeDefaultDistributionHolders)()
-        holders.collect { Dist.valueOf(it.value) }.toSet()
+    private static <T extends Enum<T>> Set<T> enumValues(final ModFileScanData.AnnotationData data, final String name, final Class<T> clazz) {
+        final List<ModAnnotation.EnumHolder> declaredHolders = data.annotationData()[name] as List<ModAnnotation.EnumHolder>
+        final List<ModAnnotation.EnumHolder> holders = declaredHolders ?: (this.&makeDefaultHolders)(clazz)
+        holders.collect { Enum.valueOf(clazz, it.value) }.toSet()
     }
 
-    private static List<ModAnnotation.EnumHolder> makeDefaultDistributionHolders() {
-        Dist.values().collect { new ModAnnotation.EnumHolder(null, it.name()) }
+    private static <T extends Enum<T>> List<ModAnnotation.EnumHolder> makeDefaultHolders(Class<T> enumClass) {
+        List.of(enumClass.getEnumConstants()).collect { new ModAnnotation.EnumHolder(null, it.name()) }
     }
 
     private Constructor resolveCtor() {

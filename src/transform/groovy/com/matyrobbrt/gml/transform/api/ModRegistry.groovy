@@ -24,11 +24,12 @@
 
 package com.matyrobbrt.gml.transform.api
 
-import com.matyrobbrt.gml.transform.GModASTTransformer
+
 import groovy.transform.CompileStatic
 
 import javax.annotation.Nullable
 
+@CompileStatic
 class ModRegistry {
     private static final Map<String, ModData> REGISTRY = [:]
 
@@ -45,9 +46,7 @@ class ModRegistry {
     }
 
     static void register(String packageName, ModData modData) {
-        if (StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE).getCallerClass() == GModASTTransformer) {
-            REGISTRY[packageName] = modData
-        }
+        REGISTRY[packageName] = modData
     }
 
     @CompileStatic

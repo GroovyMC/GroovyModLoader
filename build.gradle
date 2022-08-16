@@ -1,3 +1,7 @@
+import groovy.transform.CompileStatic
+import org.w3c.dom.Document
+import org.w3c.dom.Element
+
 plugins {
     id 'groovy'
     id 'maven-publish'
@@ -11,6 +15,9 @@ plugins {
 modsDotGroovy {
     dslVersion = '1.0.2' // Can be replaced with any existing DSL version
 }
+
+archivesBaseName = 'gml'
+group = 'com.matyrobbrt.gml'
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -99,7 +106,6 @@ tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
     task.groovyOptions.encoding = 'UTF-8'
     task.groovyOptions.optimizationOptions.indy = true
 }
-compileGroovy.groovyOptions.optimizationOptions.groovydoc = true
 
 license {
     header = rootProject.file('LICENSE')
@@ -155,7 +161,7 @@ tasks.create('fullJar', Jar) {
     manifest.attributes(manifestAttr + [
             'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
     ])
-    archiveClassifier.set 'full'
+    archiveClassifier.set 'all'
     group 'build'
     dependsOn(groovyJar)
     final File groovyOut = groovyJar.output.get().asFile
@@ -172,11 +178,30 @@ tasks.create('fullJar', Jar) {
     }
 }
 
+jar {
+    manifest.attributes(manifestAttr + [
+            'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
+    ])
+}
+java.withSourcesJar()
+
+final transformDest = new File(buildDir, 'libs/transform')
+final transformAttr = manifestAttr + [
+        'Specification-Title': 'GML-Transform'
+]
 tasks.create('transformJar', Jar) {
     from sourceSets.transform.output
-    manifest.attributes(manifestAttr)
-    archiveClassifier.set 'transform'
-    group 'build'
+    manifest.attributes(transformAttr)
+    archiveBaseName.set('transform')
+    destinationDirectory.set(transformDest)
+}
+
+tasks.create('transformSources', Jar) {
+    from sourceSets.transform.allSource
+    manifest.attributes(transformAttr)
+    archiveBaseName.set('transform')
+    archiveClassifier.set('sources')
+    destinationDirectory.set(transformDest)
 }
 
 private void makeJarJar(File path) {
@@ -189,4 +214,78 @@ static String getGitCommit() {
     def proc = 'git rev-parse --short HEAD'.execute()
     proc.waitFor()
     return proc.exitValue()? "ERROR(${proc.exitValue()})" : proc.text.trim()
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            it.artifacts = [
+                    jar, sourcesJar, fullJar
+            ]
+            it.artifactId = 'gml'
+
+            pom {
+                withXml { XmlProvider xml ->
+                    final element = xml.asElement()
+                    var depsElem = element.getOwnerDocument().createElement('dependencies')
+                    var owner = element.getOwnerDocument()
+                    var deps = (DependencySet) project.configurations.groovy.getDependencies()
+                    deps.each {
+                        depsElem.appendChild createDependency(owner, it.group, it.name, it.version, 'compile')
+                    }
+                    depsElem.appendChild createDependency(owner, project.group, 'transform', project.version, 'compile')
+                    element.appendChild(depsElem)
+                }
+            }
+        }
+        register('transform', MavenPublication) {
+            it.artifactId = 'transform'
+            it.artifacts = [transformJar, transformSources]
+            pom {
+                withXml { XmlProvider xml ->
+                    final element = xml.asElement()
+                    var depsElem = element.getOwnerDocument().createElement('dependencies')
+                    var owner = element.getOwnerDocument()
+                    var deps = (DependencySet) project.configurations.groovy.getDependencies()
+                    deps.each {
+                        depsElem.appendChild createDependency(owner, it.group, it.name, it.version, 'compile')
+                    }
+                    element.appendChild(depsElem)
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'ModdingInquisitionMavenRepo'
+            url = 'https://maven.moddinginquisition.org/releases'
+            credentials {
+                username = findProperty('inquisitionMavenUser') ?: ''
+                password = findProperty('inquisitionMavenPassword') ?: ''
+            }
+        }
+    }
+}
+
+@CompileStatic
+static Element createDependency(Document owner, String group, String name, String version, String scope) {
+    var sub = owner.createElement('dependency')
+
+    var groupEl = owner.createElement('groupId')
+    groupEl.appendChild(owner.createTextNode(group))
+    sub.appendChild groupEl
+
+    var artEl = owner.createElement('artifactId')
+    artEl.appendChild(owner.createTextNode(name))
+    sub.appendChild artEl
+
+    var verEl = owner.createElement('version')
+    verEl.appendChild(owner.createTextNode(version))
+    sub.appendChild verEl
+
+    var scopeEl = owner.createElement('scope')
+    scopeEl.appendChild(owner.createTextNode(scope))
+    sub.appendChild scopeEl
+
+    return sub
 }

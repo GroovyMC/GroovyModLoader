@@ -26,7 +26,6 @@
 package com.matyrobbrt.gml.transform
 
 import com.matyrobbrt.gml.GMLModLoadingContext
-import com.matyrobbrt.gml.GModContainer
 import com.matyrobbrt.gml.bus.GModEventBus
 import com.matyrobbrt.gml.transform.api.GModTransformer
 import com.matyrobbrt.gml.transform.api.ModRegistry
@@ -34,10 +33,7 @@ import groovy.transform.CompileStatic
 import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.eventbus.api.IEventBus
 import org.codehaus.groovy.ast.*
-import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.ConstructorCallExpression
-import org.codehaus.groovy.ast.expr.Expression
-import org.codehaus.groovy.ast.expr.PropertyExpression
 import org.codehaus.groovy.ast.stmt.BlockStatement
 import org.codehaus.groovy.ast.stmt.ExpressionStatement
 import org.codehaus.groovy.ast.tools.GeneralUtils
@@ -45,12 +41,12 @@ import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.AbstractASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
+import org.codehaus.groovy.transform.TransformWithPriority
 import org.objectweb.asm.Opcodes
 
 @CompileStatic
 @GroovyASTTransformation(phase = CompilePhase.SEMANTIC_ANALYSIS)
-class GModASTTransformer extends AbstractASTTransformation {
-    public static final ClassNode GMOD_CONTAINER = ClassHelper.make(GModContainer)
+class GModASTTransformer extends AbstractASTTransformation implements TransformWithPriority {
 
     @Override
     void visit(ASTNode[] nodes, SourceUnit source) {
@@ -60,18 +56,13 @@ class GModASTTransformer extends AbstractASTTransformation {
         if (!(node instanceof ClassNode)) throw new IllegalArgumentException('@GMod annotation can only be applied to classes!')
         final cNode = node as ClassNode
         // noinspection UnnecessaryQualifiedReference
-        ModRegistry.register(cNode.packageName, new ModRegistry.ModData(cNode.name, GModASTTransformer.<String>getMemberPropertyValue(annotation, 'value')))
+        ModRegistry.register(cNode.packageName, new ModRegistry.ModData(cNode.name, getMemberStringValue(annotation, 'value')))
         ServiceLoader.load(GModTransformer, getClass().classLoader).each { it.transform(cNode, annotation, source) }
     }
 
-    private static <T> T getMemberPropertyValue(AnnotationNode annotation, String memberName, T defaultValue = null) {
-        final Expression member = annotation.getMember(memberName)
-        if (member instanceof PropertyExpression) {
-            if (member.property !== null) {
-                return (member.property as ConstantExpression).value as T
-            }
-        }
-        return defaultValue
+    @Override
+    int priority() {
+        return 10
     }
 
     @CompileStatic
