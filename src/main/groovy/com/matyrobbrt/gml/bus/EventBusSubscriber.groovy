@@ -65,4 +65,9 @@ import net.minecraftforge.api.distmarker.Dist
      * @return an array of environments to load this event subscriber on
      */
     Environment[] environment() default [Environment.DEV, Environment.PRODUCTION]
+
+    /**
+     * If this subscriber should register a new instance of the class, instead of registering the class.
+     */
+    boolean createInstance() default false
 }

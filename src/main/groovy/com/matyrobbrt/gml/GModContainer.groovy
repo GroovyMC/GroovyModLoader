@@ -72,10 +72,10 @@ final class GModContainer extends ModContainer {
         this.contextExtension = { new GMLModLoadingContext(this) }
 
         modBus = new GModEventBus(BusBuilder.builder()
-                .setExceptionHandler {bus, event, listeners, i, cause -> log.error('Failed to process mod event: {}', new EventBusErrorMessage(event, i, listeners, cause)) }
-                .setTrackPhases(false)
-                .markerType(IModBusEvent)
-                .build())
+                    .setExceptionHandler { bus, event, listeners, i, cause -> log.error('Failed to process mod event: {}', new EventBusErrorMessage(event, i, listeners, cause)) }
+                    .setTrackPhases(false)
+                    .markerType(IModBusEvent)
+                    .build())
 
         final module = layer.findModule(info.owningFile.moduleName()).orElseThrow()
         modClass = Class.forName(module, className)
@@ -132,11 +132,17 @@ final class GModContainer extends ModContainer {
 
                 if (FMLEnvironment.dist in dists && Environment.current() in envs) {
                     log.info('Auto-Subscribing EBS class {} to bus {}', it.clazz().className, bus)
-                    (switch (bus) {
-                        case FORGE_EBS -> MinecraftForge.EVENT_BUS
+                    final eventBus = (switch (bus) {
+                        case null, FORGE_EBS -> MinecraftForge.EVENT_BUS
                         case MOD_EBS -> getModBus()
                         default -> throw new IllegalArgumentException("Unknown bus: $bus")
-                    }).register(Class.forName(it.clazz().className, true, modClass.classLoader))
+                    })
+                    final cls = Class.forName(it.clazz().className, true, modClass.classLoader)
+                    if (it.annotationData()['createInstance'] === true) {
+                        eventBus.register(cls.getDeclaredConstructor().newInstance())
+                    } else {
+                        eventBus.register(cls)
+                    }
                 }
             }
 
