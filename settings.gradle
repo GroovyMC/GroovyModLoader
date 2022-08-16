@@ -6,11 +6,15 @@ pluginManagement {
         }
         maven {
             name 'MinecraftForge'
-            url "https://files.minecraftforge.net/maven/"
+            url 'https://maven.minecraftforge.net/'
         }
         maven {
             name 'ParchmentMC'
             url 'https://maven.parchmentmc.org'
+        }
+        maven {
+            name 'Modding Inquisition Releases'
+            url 'https://maven.moddinginquisition.org/releases'
         }
         mavenCentral()
         gradlePluginPortal()

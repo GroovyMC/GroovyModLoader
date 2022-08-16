@@ -5,88 +5,11 @@ plugins {
     id 'net.minecraftforge.gradle' version '5.1.+'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
+    id 'io.github.groovymc.modsdotgroovy' version '1.0.2'
 }
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import com.github.jengelman.gradle.plugins.shadow.transformers.Transformer
-import com.github.jengelman.gradle.plugins.shadow.transformers.TransformerContext
-import shadow.org.apache.tools.zip.*
-import shadow.org.codehaus.plexus.util.IOUtil
-
-class UpdatedGroovyExtensionModuleTransformer implements Transformer {
-
-    private static final GROOVY_EXTENSION_MODULE_DESCRIPTOR_PATH =
-            'META-INF/groovy/org.codehaus.groovy.runtime.ExtensionModule'
-
-    private static final MODULE_NAME_KEY = 'moduleName'
-    private static final MODULE_VERSION_KEY = 'moduleVersion'
-    private static final EXTENSION_CLASSES_KEY = 'extensionClasses'
-    private static final STATIC_EXTENSION_CLASSES_KEY = 'staticExtensionClasses'
-
-    private static final MERGED_MODULE_NAME = 'MergedByShadowJar'
-    private static final MERGED_MODULE_VERSION = '1.0.0'
-
-    private final Properties module = new Properties()
-
-    @Override
-    boolean canTransformResource(FileTreeElement element) {
-        return element.relativePath.pathString == GROOVY_EXTENSION_MODULE_DESCRIPTOR_PATH
-    }
-
-    @Override
-    void transform(TransformerContext context) {
-        def props = new Properties()
-        props.load(context.is)
-        props.each { String key, String value ->
-            switch (key) {
-                case MODULE_NAME_KEY:
-                    handle(key, value) {
-                        module.setProperty(key, MERGED_MODULE_NAME)
-                    }
-                    break
-                case MODULE_VERSION_KEY:
-                    handle(key, value) {
-                        module.setProperty(key, MERGED_MODULE_VERSION)
-                    }
-                    break
-                case [EXTENSION_CLASSES_KEY, STATIC_EXTENSION_CLASSES_KEY]:
-                    handle(key, value) { String existingValue ->
-                        def newValue = "${existingValue},${value}"
-                        module.setProperty(key, newValue)
-                    }
-                    break
-            }
-        }
-    }
-
-    private handle(String key, String value, Closure mergeValue) {
-        def existingValue = module.getProperty(key)
-        if (existingValue) {
-            mergeValue(existingValue)
-        } else {
-            module.setProperty(key, value)
-        }
-    }
-
-    @Override
-    boolean hasTransformedResource() {
-        return module.size() > 0
-    }
-
-    @Override
-    void modifyOutputStream(ZipOutputStream os, boolean preserveFileTimestamps) {
-        ZipEntry entry = new ZipEntry(GROOVY_EXTENSION_MODULE_DESCRIPTOR_PATH)
-        entry.time = TransformerContext.getEntryTimestamp(preserveFileTimestamps, entry.time)
-        os.putNextEntry(entry)
-        IOUtil.copy(toInputStream(module), os)
-        os.closeEntry()
-    }
-
-    private static InputStream toInputStream(Properties props) {
-        def baos = new ByteArrayOutputStream()
-        props.store(baos, null)
-        return new ByteArrayInputStream(baos.toByteArray())
-    }
+modsDotGroovy {
+    dslVersion = '1.0.2' // Can be replaced with any existing DSL version
 }
 
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
@@ -111,6 +34,8 @@ configurations {
 
     groovy
     globalCompile.extendsFrom(groovy)
+
+    runtimeOnly.extendsFrom(groovy)
 }
 
 sourceSets {
@@ -122,8 +47,9 @@ sourceSets {
         compileClasspath += transform.output
     }
 }
+tasks.create('groovyJar', ManifestTransformingJiJ)
 
-// Groovylicious is written in pure Groovy, so delete the empty java folder in each of the sourceSets
+// GML is written in pure Groovy, so delete the empty java folder in each of the sourceSets
 sourceSets.each { sourceSet ->
     final javaDir = file("src/${sourceSet.name}/java/")
     javaDir.deleteDir()
@@ -136,12 +62,14 @@ repositories {
     }
 }
 
-jarJar.enable()
-
 final groovyLibs = [
         'stdlib', 'contracts', 'datetime',
         'nio', 'macro', 'macro-library',
-        'templates', 'typecheckers'
+        'templates', 'typecheckers',
+
+        'dateutil', 'ginq',
+
+        'toml', 'json'
 ]
 
 dependencies {
@@ -149,15 +77,21 @@ dependencies {
 
     groovyLibs.each {
         groovy groovyDep(it)
+        groovyJar.setRange(groovyId(it), "[${groovy_version},${groovy_next_major})")
     }
 
     transformCompileOnly sourceSets.main.output
 
     testCompileOnly sourceSets.main.output
+    testCompileOnly modsDotGroovy.mdgDsl()
 }
 
 String groovyDep(String name) {
-    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}:${project.groovy_version}"
+    return "${groovyId(name)}:${project.groovy_version}"
+}
+
+static String groovyId(String name) {
+    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}"
 }
 
 tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
@@ -172,8 +106,15 @@ license {
 }
 
 final manifestAttr = [
-       'FMLModType' : 'LIBRARY',
-       'Implementation-Version': project.version
+        'Specification-Title': 'GroovyModLoader',
+        'Specification-Vendor': 'GroovyMC',
+        'Specification-Version': 1,
+        'Implementation-Title': project.name,
+        'Implementation-Version': project.version,
+        'Implementation-Vendor' : 'GroovyMC',
+        'Implementation-Timestamp': new Date().format(/yyyy-MM-dd'T'HH:mm:ssZ/),
+        'GitCommit': getGitCommit(),
+        'FMLModType' : 'LANGPROVIDER',
 ]
 
 tasks.create('testJar', Jar) {
@@ -191,22 +132,21 @@ tasks.create('testJar', Jar) {
     ])
 }
 
-tasks.create('groovyJar', ShadowJar) {
+tasks.named('groovyJar', ManifestTransformingJiJ).configure {
     group('build')
-    archiveClassifier.set('groovy')
+    output.set(project.file("$buildDir/libs/${archivesBaseName}-${version}-groovy.jar"))
     configurations = [project.configurations.groovy]
+    manifestAttributes.set(manifestAttr + [
+            'Specification-Title': 'GML-GroovyFatJar',
+            'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
+    ])
+
     [
-            '**/module-info.class',
-            'LICENSE.txt',
-            'LICENSE-junit.txt',
-            'META-INF/LICENSE.txt',
-            'META-INF/LICENSE.md',
-            'META-INF/NOTICE.txt',
-            '**/*.kotlin-module'
-    ].each { exclude it }
-    manifest.attributes(manifestAttr + ['Automatic-Module-Name': 'com.matyrobbrt.gml.groovy'])
-    transform(UpdatedGroovyExtensionModuleTransformer)
-    mergeServiceFiles()
+            'jackson-databind', 'jackson-core', 'jackson-annotations'
+    ].each {
+        setUpperBound('com.fasterxml.jackson.core:' + it, '3.0.0')
+    }
+    setUpperBound('com.fasterxml.jackson.dataformat:jackson-dataformat-toml', '3.0.0')
 }
 
 tasks.create('fullJar', Jar) {
@@ -218,9 +158,10 @@ tasks.create('fullJar', Jar) {
     archiveClassifier.set 'full'
     group 'build'
     dependsOn(groovyJar)
-    from(groovyJar.archiveFile.get().asFile) {
+    final File groovyOut = groovyJar.output.get().asFile
+    from(groovyOut) {
         into 'META-INF/jarjar'
-        rename groovyJar.archiveName as String, 'groovy.jar'
+        rename groovyOut.name, 'groovy.jar'
     }
     final path = project.file("$buildDir/jarjar/metadata.json")
     doFirst {
@@ -231,7 +172,21 @@ tasks.create('fullJar', Jar) {
     }
 }
 
+tasks.create('transformJar', Jar) {
+    from sourceSets.transform.output
+    manifest.attributes(manifestAttr)
+    archiveClassifier.set 'transform'
+    group 'build'
+}
+
 private void makeJarJar(File path) {
-    final groovy = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'groovy-homebaked', project.groovy_version, 'groovy.jar')
+    final groovy = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'groovy-fat', project.groovy_version, 'groovy.jar',
+        "[$groovy_version,$groovy_next_major)")
     JiJUtils.writeJiJ(path, groovy)
+}
+
+static String getGitCommit() {
+    def proc = 'git rev-parse --short HEAD'.execute()
+    proc.waitFor()
+    return proc.exitValue()? "ERROR(${proc.exitValue()})" : proc.text.trim()
 }

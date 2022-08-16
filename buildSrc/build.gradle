@@ -4,9 +4,14 @@ plugins {
 
 repositories {
     mavenCentral()
+    maven {
+        url 'https://maven.minecraftforge.net'
+    }
 }
 
 dependencies {
     implementation gradleApi()
     implementation 'com.google.code.gson:gson:2.9.0'
+
+    compileOnly 'net.minecraftforge.gradle:ForgeGradle:5.1+'
 }

@@ -124,6 +124,7 @@ final class GModContainer extends ModContainer {
                 final dists = dists(it)
 
                 if (FMLEnvironment.dist in dists) {
+                    log.info('Auto-Subscribing EBS class {} to bus {}', it.clazz().className, bus)
                     (switch (bus) {
                         case FORGE_EBS -> MinecraftForge.EVENT_BUS
                         case MOD_EBS -> getModBus()
