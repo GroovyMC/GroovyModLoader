@@ -1,1 +1,1 @@
-- Initial Beta release
+- Fix an EBS crash

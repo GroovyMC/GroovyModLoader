@@ -33,10 +33,10 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.api.distmarker.Dist
-import net.minecraftforge.common.MinecraftForge
 import net.minecraftforge.eventbus.EventBusErrorMessage
 import net.minecraftforge.eventbus.api.BusBuilder
 import net.minecraftforge.eventbus.api.Event
+import net.minecraftforge.fml.Bindings
 import net.minecraftforge.fml.ModContainer
 import net.minecraftforge.fml.ModLoadingException
 import net.minecraftforge.fml.ModLoadingStage
@@ -133,7 +133,7 @@ final class GModContainer extends ModContainer {
                 if (FMLEnvironment.dist in dists && Environment.current() in envs) {
                     log.info('Auto-Subscribing EBS class {} to bus {}', it.clazz().className, bus)
                     final eventBus = (switch (bus) {
-                        case null, FORGE_EBS -> MinecraftForge.EVENT_BUS
+                        case null, FORGE_EBS -> Bindings.getForgeBus().get()
                         case MOD_EBS -> getModBus()
                         default -> throw new IllegalArgumentException("Unknown bus: $bus")
                     })

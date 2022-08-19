@@ -41,6 +41,16 @@ import org.codehaus.groovy.control.SourceUnit
 
     @Override
     void transform(ClassNode classNode, AnnotationNode annotationNode, SourceUnit source) {
+        final setupModStmt = new ExpressionStatement(
+                GeneralUtils.callX(
+                        GeneralUtils.callX(GeneralUtils.callX(ClassHelper.make(GMLModLoadingContext), 'get'), 'getContainer'),
+                        'setupMod',
+                        GeneralUtils.varX('this')
+                )
+        )
+        if (classNode.declaredConstructors.isEmpty()) {
+            classNode.addObjectInitializerStatements(setupModStmt)
+        }
         classNode.declaredConstructors.each {
             final code = it.code as BlockStatement
             final callsAnotherCtor = code.statements.any {
@@ -55,15 +65,7 @@ import org.codehaus.groovy.control.SourceUnit
             // We ONLY want to insert the setupMod in constructors that do not call others
             if (!callsAnotherCtor) {
                 it.setCode(GeneralUtils.block(
-                        code.variableScope,
-                        new ExpressionStatement(
-                                GeneralUtils.callX(
-                                        GeneralUtils.callX(GeneralUtils.callX(ClassHelper.make(GMLModLoadingContext), 'get'), 'getContainer'),
-                                        'setupMod',
-                                        GeneralUtils.varX('this')
-                                )
-                        ),
-                        code
+                        code.variableScope, setupModStmt, code
                 ))
             }
         }
