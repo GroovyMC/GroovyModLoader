@@ -24,6 +24,7 @@
 
 package com.matyrobbrt.gml.transform.gmods
 
+import com.matyrobbrt.gml.GMLModLoadingContext
 import com.matyrobbrt.gml.bus.GModEventBus
 import com.matyrobbrt.gml.transform.api.GModTransformer
 import groovy.transform.CompileStatic
@@ -32,21 +33,36 @@ import net.minecraftforge.eventbus.api.IEventBus
 import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.ClassHelper
 import org.codehaus.groovy.ast.ClassNode
+import org.codehaus.groovy.ast.MethodNode
+import org.codehaus.groovy.ast.Parameter
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.control.SourceUnit
 import org.objectweb.asm.Opcodes
 
 @CompileStatic
- final class BusTransformer implements GModTransformer {
+final class BusTransformer implements GModTransformer {
     @Override
     void transform(ClassNode classNode, AnnotationNode annotationNode, SourceUnit source) {
-        classNode.addProperty(
-                'modBus', Opcodes.ACC_PUBLIC, ClassHelper.make(GModEventBus),
-                null, null, null
+        final modBus = classNode.addField(
+                'modBus', Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL, ClassHelper.make(GModEventBus),
+                GeneralUtils.callX(GeneralUtils.callX(ClassHelper.make(GMLModLoadingContext), 'get'), 'getModEventBus')
         )
-        classNode.addProperty(
-                'forgeBus', Opcodes.ACC_PUBLIC, ClassHelper.make(IEventBus),
-                GeneralUtils.propX(GeneralUtils.classX(MinecraftForge), 'EVENT_BUS'), null, null
+        getOrCreateMethod(classNode, 'getModBus', modBus.type).setCode(
+                GeneralUtils.returnS(GeneralUtils.fieldX(modBus))
+        )
+
+        final forgeBus = classNode.addField(
+                'forgeBus', Opcodes.ACC_PRIVATE | Opcodes.ACC_FINAL, ClassHelper.make(IEventBus),
+                GeneralUtils.propX(GeneralUtils.classX(MinecraftForge), 'EVENT_BUS')
+        )
+        getOrCreateMethod(classNode, 'getForgeBus', forgeBus.type).setCode(
+                GeneralUtils.returnS(GeneralUtils.fieldX(forgeBus))
+        )
+    }
+
+    private static MethodNode getOrCreateMethod(ClassNode clazz, String name, ClassNode type) {
+        return clazz.getMethod(name, Parameter.EMPTY_ARRAY) ?: clazz.addMethod(
+                name, Opcodes.ACC_PUBLIC, type, Parameter.EMPTY_ARRAY, ClassNode.EMPTY_ARRAY, null
         )
     }
 }

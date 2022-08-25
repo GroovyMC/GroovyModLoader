@@ -27,15 +27,25 @@ package com.matyrobbrt.gml.extensions
 import groovy.transform.CompileStatic
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.FirstParam
+import groovy.transform.stc.SecondParam
 import net.minecraftforge.eventbus.api.Event
 import net.minecraftforge.eventbus.api.EventPriority
 import net.minecraftforge.eventbus.api.IEventBus
 
 @CompileStatic
 class EventBusExtensions {
+    @Deprecated(forRemoval = true, since = "1.1.1")
     static <T extends Event> void addListener(IEventBus self,
                                               @ClosureParams(value = FirstParam.FirstGenericType) Closure closure,
                                               EventPriority priority = EventPriority.NORMAL, boolean receiveCancelled = false) {
+        self.<T>addListener(priority, receiveCancelled, ev -> closure.call(ev))
+    }
+
+    @SuppressWarnings('unused')
+    static <T extends Event> void addListener(IEventBus self, Class<T> eventClass,
+                                              @ClosureParams(value = SecondParam.FirstGenericType.class) Closure closure,
+                                              EventPriority priority = EventPriority.NORMAL, boolean receiveCancelled = false) {
+        //noinspection UnnecessaryQualifiedReference
         self.<T>addListener(priority, receiveCancelled, ev -> closure.call(ev))
     }
 }

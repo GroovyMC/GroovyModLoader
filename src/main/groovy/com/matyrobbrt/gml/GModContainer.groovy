@@ -96,9 +96,11 @@ final class GModContainer extends ModContainer {
     }
 
     private boolean setup = false
-    @SuppressWarnings('unused') // A transformer will call this method
+    @Deprecated(forRemoval = true, since = "1.1.1")
+    @SuppressWarnings('unused')
     void setupMod(Object mod) {
         if (!setup) {
+            log.debug('Mod {} was compiled with a previous version of GML, calling deprecated `setupMod` method, which will be removed in the future.', modId)
             injectBus(mod)
             setup = true
         }

@@ -28,6 +28,7 @@ import com.matyrobbrt.gml.BaseGMod
 import com.matyrobbrt.gml.GMod
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent
 
 @GMod('gml')
 @CompileStatic
@@ -35,5 +36,8 @@ import groovy.util.logging.Slf4j
 final class GMLMod implements BaseGMod {
     GMLMod() {
         log.info('Initialised GML mod. Version: {}', getClass().getPackage().implementationVersion)
+        modBus.addListener(FMLLoadCompleteEvent) {
+            log.debug('GML finished loading!')
+        }
     }
 }
