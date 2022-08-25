@@ -33,6 +33,7 @@ import java.lang.annotation.RetentionPolicy
 
 @CompileStatic
 @ApiStatus.Internal
+@Deprecated(since = "Internal! Do not use!")
 @Retention(RetentionPolicy.SOURCE)
 @GroovyASTTransformationClass(value = 'com.matyrobbrt.gml.transform.gmods.GModASTTransformer')
 @interface __InternalGModMarker {

@@ -50,6 +50,7 @@ class ModIdentificationTransformer extends AbstractASTTransformation implements 
         // noinspection UnnecessaryQualifiedReference
         ModRegistry.register(node.packageName, new ModRegistry.ModData(node.name, getMemberStringValue(annotation, 'value')))
 
+        //noinspection GrDeprecatedAPIUsage
         final ann = new AnnotationNode(ClassHelper.make(__InternalGModMarker))
         annotation.members.each(ann.&addMember)
         node.addAnnotation(ann)
