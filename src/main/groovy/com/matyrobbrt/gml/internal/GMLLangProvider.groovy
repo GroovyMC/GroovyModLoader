@@ -28,6 +28,7 @@ import com.matyrobbrt.gml.GMod
 import com.matyrobbrt.gml.mappings.MappingsProvider
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import net.minecraftforge.fml.loading.FMLEnvironment
 import net.minecraftforge.forgespi.language.ILifecycleEvent
 import net.minecraftforge.forgespi.language.IModLanguageProvider
 import net.minecraftforge.forgespi.language.ModFileScanData
@@ -42,7 +43,10 @@ final class GMLLangProvider implements IModLanguageProvider {
     private static final Type GMOD_TYPE = Type.getType(GMod)
 
     GMLLangProvider() {
-        MappingsProvider.INSTANCE.startMappingsSetup()
+        if (FMLEnvironment.production) {
+            // Only load mappings in prod
+            MappingsProvider.INSTANCE.startMappingsSetup()
+        }
     }
 
     @Override

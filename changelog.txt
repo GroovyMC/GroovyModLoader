@@ -1,1 +1,1 @@
-- Fix an EBS crash
+- Fix a few trasnformer + mappings issues

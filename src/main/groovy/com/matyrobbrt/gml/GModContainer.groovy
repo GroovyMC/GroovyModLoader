@@ -128,7 +128,7 @@ final class GModContainer extends ModContainer {
                 }.call(it)
 
                 if (!isInMod) return
-                final bus = it.annotationData()['value'] as Type
+                final bus = it.annotationData()['value'] as Type ?: FORGE_EBS
                 final dists = enumValues(it, 'dist', Dist)
                 final envs = enumValues(it, 'environment', Environment)
 
