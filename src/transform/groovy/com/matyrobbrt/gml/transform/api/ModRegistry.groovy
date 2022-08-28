@@ -26,6 +26,7 @@ package com.matyrobbrt.gml.transform.api
 
 
 import groovy.transform.CompileStatic
+import org.jetbrains.annotations.ApiStatus
 
 import javax.annotation.Nullable
 
@@ -33,6 +34,11 @@ import javax.annotation.Nullable
 class ModRegistry {
     private static final Map<String, ModData> REGISTRY = [:]
 
+    /**
+     * Gets the mod data for a package, or {@code null} if one isn't found.
+     * @param packageName the package to lookup mod data for
+     * @return the mod data for the package, or {@code null} if one isn't found
+     */
     @Nullable
     static ModData getData(String packageName) {
         ModData found = REGISTRY[packageName]
@@ -45,6 +51,7 @@ class ModRegistry {
         return found
     }
 
+    @ApiStatus.Internal
     static void register(String packageName, ModData modData) {
         REGISTRY[packageName] = modData
     }

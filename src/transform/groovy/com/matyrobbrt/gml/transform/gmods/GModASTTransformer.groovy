@@ -58,12 +58,21 @@ class GModASTTransformer extends AbstractASTTransformation implements TransformW
         registerGlobalTransformer(transformer)
     }
 
+    /**
+     * Registers a global transformer.
+     * @param transformer the transformer to register
+     */
     static void registerGlobalTransformer(GModTransformer transformer) {
-        GLOBAL_TRANSFORMERS.push(transformer)
+        GLOBAL_TRANSFORMERS.add(transformer)
     }
 
+    /**
+     * Registers a transformer for a specific mod id.
+     * @param modId the ID of the mod to register the transformer for
+     * @param transformer the transformer to register
+     */
     static void registerTransformer(String modId, GModTransformer transformer) {
-        BY_MOD_TRANSFORMERS.computeIfAbsent(modId, {new ArrayList<GModTransformer>()}).push(transformer)
+        BY_MOD_TRANSFORMERS.computeIfAbsent(modId, { new ArrayList<GModTransformer>() }).add(transformer)
     }
 
     @Override
@@ -75,7 +84,7 @@ class GModASTTransformer extends AbstractASTTransformation implements TransformW
         final actualAnnotation = cNode.annotations.find { it.classNode == GMOD }
         GLOBAL_TRANSFORMERS.each { it.transform(cNode, actualAnnotation, source) }
 
-        BY_MOD_TRANSFORMERS.computeIfAbsent(getMemberStringValue(actualAnnotation, 'value'), {new ArrayList<GModTransformer>()}).each { GModTransformer it ->
+        BY_MOD_TRANSFORMERS.computeIfAbsent(getMemberStringValue(actualAnnotation, 'value'), { new ArrayList<GModTransformer>() }).each { GModTransformer it ->
             it.transform(cNode, actualAnnotation, source)
         }
     }

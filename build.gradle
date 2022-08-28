@@ -229,6 +229,18 @@ jar {
 }
 java.withSourcesJar()
 
+groovydoc {
+    use = true
+    source(sourceSets.transform.allSource)
+    source(sourceSets.extension.allSource)
+}
+
+tasks.create('groovydocJar', Jar) {
+    classifier 'javadoc'
+    from groovydoc.destinationDir
+    dependsOn(groovydoc)
+}
+
 final transformDest = new File(buildDir, 'libs/transform')
 final transformAttr = manifestAttr + [
         'Specification-Title': 'GML-Transform'
@@ -282,7 +294,7 @@ publishing {
     publications {
         register('mavenJava', MavenPublication) {
             it.artifacts = [
-                    jar, sourcesJar, fullJar
+                    jar, sourcesJar, fullJar, groovydocJar
             ]
             it.artifactId = 'gml'
 

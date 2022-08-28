@@ -38,14 +38,23 @@ class EventBusExtensions {
     static <T extends Event> void addListener(IEventBus self,
                                               @ClosureParams(value = FirstParam.FirstGenericType) Closure closure,
                                               EventPriority priority = EventPriority.NORMAL, boolean receiveCancelled = false) {
-        self.<T>addListener(priority, receiveCancelled, ev -> closure.call(ev))
+        self.<T> addListener(priority, receiveCancelled, ev -> closure.call(ev))
     }
 
+    /**
+     * Add a consumer listener with the specified {@link EventPriority} and potentially cancelled events.
+     *
+     * @param eventClass unused parameter needed in order to properly specify the event type
+     * @param priority {@link EventPriority} for this listener. Defaults to {@link EventPriority#NORMAL}
+     * @param receiveCancelled indicate if this listener should receive events that have been {@link net.minecraftforge.eventbus.api.Cancelable} cancelled. Defaults to {@code false}.
+     * @param closure callback to invoke when a matching event is received.
+     * @param <T>  the {@link Event} subclass to listen for
+     */
     @SuppressWarnings('unused')
     static <T extends Event> void addListener(IEventBus self, Class<T> eventClass,
                                               @ClosureParams(value = SecondParam.FirstGenericType.class) Closure closure,
                                               EventPriority priority = EventPriority.NORMAL, boolean receiveCancelled = false) {
         //noinspection UnnecessaryQualifiedReference
-        self.<T>addListener(priority, receiveCancelled, ev -> closure.call(ev))
+        self.<T> addListener(priority, receiveCancelled, ev -> closure.call(ev))
     }
 }
