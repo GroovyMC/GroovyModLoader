@@ -63,7 +63,7 @@ final class BusTransformer implements GModTransformer {
     }
 
     private static MethodNode getOrCreateMethod(ClassNode clazz, String name, ClassNode type) {
-        return (clazz.getMethod(name, Parameter.EMPTY_ARRAY).tap {
+        return (clazz.getMethod(name, Parameter.EMPTY_ARRAY)?.tap {
             it.annotations.removeIf { it.classNode == Traits.TRAITBRIDGE_CLASSNODE }
         } ?: clazz.addMethod(
                 name, Opcodes.ACC_PUBLIC, type, Parameter.EMPTY_ARRAY, ClassNode.EMPTY_ARRAY, null
