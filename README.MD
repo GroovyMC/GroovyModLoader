@@ -14,8 +14,8 @@ repositories {
     }
 }
 dependencies {
-    compileOnly 'com.matyrobbrt.gml:gml:${gmlVersion}'
-    runtimeOnly('com.matyrobbrt.gml:gml:${gmlVersion}:all') {
+    compileOnly "com.matyrobbrt.gml:gml:${gmlVersion}"
+    runtimeOnly("com.matyrobbrt.gml:gml:${gmlVersion}:all") {
         exclude module: 'transform'
     }
 }
