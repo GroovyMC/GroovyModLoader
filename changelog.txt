@@ -1,1 +1,1 @@
-- Fix a few trasnformer + mappings issues
+- Load mod's extensions

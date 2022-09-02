@@ -97,7 +97,7 @@ class ModExtensionLoader {
     private static boolean isOnDist(String className, ClassLoader loader) {
         AtomicBoolean isOnDist = new AtomicBoolean(true)
         final is = loader.getResourceAsStream(className.replace('.', '/') + ".class")
-        println 'Found is?'
+        if (is === null) return true
         new ClassReader(is.readAllBytes()).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
