@@ -101,7 +101,6 @@ class ModExtensionLoader {
         new ClassReader(is.readAllBytes()).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
-                println 'Visitng!!!'
                 super.visit(version, access, name, signature, superName, interfaces)
             }
 

@@ -91,6 +91,7 @@ repositories {
         name = 'Modding Inquisition Snapshots'
         url = 'https://maven.moddinginquisition.org/snapshots'
     }
+    maven { url = 'https://maven.moddinginquisition.org/releases' }
 }
 
 final groovyLibs = [
@@ -117,6 +118,8 @@ dependencies {
     testCompileOnly modsDotGroovy.mdgDsl()
 
     modCompileOnly sourceSets.main.output
+
+    compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.1.0'
 }
 
 String groovyDep(String name) {
@@ -202,7 +205,7 @@ tasks.named('groovyJar', ManifestTransformingJiJ).configure {
 
 tasks.create('modJar', Jar) {
     from sourceSets.mod.output
-    manifest.attributes(manifestAttr)
+    manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
     classifier 'mod'
 }
 

@@ -49,12 +49,14 @@ class EventBusExtensions {
      * @param receiveCancelled indicate if this listener should receive events that have been {@link net.minecraftforge.eventbus.api.Cancelable} cancelled. Defaults to {@code false}.
      * @param closure callback to invoke when a matching event is received.
      * @param <T>  the {@link Event} subclass to listen for
+     * @deprecated this doesn't actually encode the right generic type
      */
     @SuppressWarnings('unused')
+    @Deprecated(forRemoval = true, since = "1.1.3")
     static <T extends Event> void addListener(IEventBus self, Class<T> eventClass,
                                               @ClosureParams(value = SecondParam.FirstGenericType.class) Closure closure,
                                               EventPriority priority = EventPriority.NORMAL, boolean receiveCancelled = false) {
         //noinspection UnnecessaryQualifiedReference
-        self.<T> addListener(priority, receiveCancelled, ev -> closure.call(ev))
+        self.<T> addListener(priority, receiveCancelled, (T ev) -> closure.call(ev))
     }
 }
