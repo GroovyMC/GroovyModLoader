@@ -50,6 +50,8 @@ configurations {
     globalCompile.extendsFrom(groovy)
 
     runtimeOnly.extendsFrom(groovy)
+
+    include
 }
 
 sourceSets {
@@ -120,6 +122,11 @@ dependencies {
     modCompileOnly sourceSets.main.output
 
     compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.1.0'
+    include("io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}") {
+        groovyJar.setRange("io.github.groovymc.cgl:cgl-${mc_version}-forge", "[${cgl_version},)")
+    }
+
+    compileOnly fg.deobf("com.matyrobbrt.gml:gml:1.2.0:all")
 }
 
 String groovyDep(String name) {
@@ -169,6 +176,8 @@ final manifestAttr = [
         'BundledGroovyVersion': project.groovy_version,
         'GitCommit': getGitCommit(),
         'FMLModType' : 'LANGPROVIDER',
+        'Built-on-Minecraft': project.mc_version,
+        'DownloadHomepage': 'https://www.curseforge.com/minecraft/mc-mods/gml/files'
 ]
 
 tasks.create('testJar', Jar) {
@@ -189,7 +198,7 @@ tasks.create('testJar', Jar) {
 tasks.named('groovyJar', ManifestTransformingJiJ).configure {
     group('build')
     output.set(project.file("$buildDir/libs/${archivesBaseName}-${version}-groovy.jar"))
-    configurations = [project.configurations.groovy]
+    configurations = [project.configurations.groovy, project.configurations.include] // TODO cgl should be in another jar
     manifestAttributes.set(manifestAttr + [
             'Specification-Title': 'GML-GroovyFatJar',
             'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
