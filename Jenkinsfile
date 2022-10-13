@@ -11,6 +11,7 @@ void setBuildStatus(String message, String state) {
 }
 
 pipeline {
+    agent any
     stages {
         stage('build') {
             steps {
