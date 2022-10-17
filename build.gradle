@@ -125,8 +125,6 @@ dependencies {
     include("io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}") {
         groovyJar.setRange("io.github.groovymc.cgl:cgl-${mc_version}-forge", "[${cgl_version},)")
     }
-
-    compileOnly fg.deobf("com.matyrobbrt.gml:gml:1.2.0:all")
 }
 
 String groovyDep(String name) {
