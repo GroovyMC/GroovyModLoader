@@ -76,7 +76,7 @@ public class ScriptModLocator implements IModLocator {
         FileSystem fs;
         try {
             var method = MethodHandles.privateLookupIn(Jimfs.class, MethodHandles.lookup()).findStatic(Jimfs.class, "newFileSystem", MethodType.methodType(FileSystem.class, URI.class, Configuration.class));
-            fs = (FileSystem) method.invoke(inPath.toUri(), Configuration.windows());
+            fs = (FileSystem) method.invoke(new java.net.URI("jimfs", "mod#" + modId, null, null), Configuration.windows());
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
