@@ -28,3 +28,4 @@ pluginManagement {
 }
 
 rootProject.name = 'GML'
+include('script-mods')

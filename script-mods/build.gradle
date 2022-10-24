@@ -1,0 +1,53 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+version = '1.0.0'
+archivesBaseName = 'script-mods'
+
+repositories {
+    mavenCentral()
+    maven {
+        url = 'https://maven.minecraftforge.net'
+    }
+    maven {
+        url = 'https://libraries.minecraft.net/'
+    }
+}
+
+configurations {
+    shadow
+}
+
+dependencies {
+    implementation "net.minecraftforge:fmlcore:${mc_version}-${forge_version}"
+    implementation "net.minecraftforge:fmlloader:${mc_version}-${forge_version}"
+    implementation 'net.minecraftforge:forgespi:6.0.0'
+    implementation 'cpw.mods:securejarhandler:2.1.4'
+    implementation "org.apache.groovy:groovy:${groovy_version}"
+
+    shadow 'com.google.jimfs:jimfs:1.2'
+    implementation 'com.google.jimfs:jimfs:1.2'
+}
+
+shadowJar {
+    configurations = [project.configurations.shadow]
+}
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
+task relocateShadowJar(type: ConfigureShadowRelocation) {
+    target = tasks.shadowJar
+    prefix = 'com.matyrobbrt.gml.scriptmods.shadow' // Default value is "shadow"
+
+}
+
+tasks.shadowJar.dependsOn tasks.relocateShadowJar
+
+jar {
+    manifest.attributes([
+            'Implementation-Name': 'GScriptMods',
+            'Implementation-Version': version
+    ])
+}

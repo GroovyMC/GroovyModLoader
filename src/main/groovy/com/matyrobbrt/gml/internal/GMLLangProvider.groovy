@@ -26,12 +26,14 @@ package com.matyrobbrt.gml.internal
 
 import com.matyrobbrt.gml.GMod
 import com.matyrobbrt.gml.mappings.MappingsProvider
+import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.fml.loading.FMLEnvironment
 import net.minecraftforge.forgespi.language.ILifecycleEvent
 import net.minecraftforge.forgespi.language.IModLanguageProvider
 import net.minecraftforge.forgespi.language.ModFileScanData
+import net.minecraftforge.forgespi.locating.IModFile
 import org.objectweb.asm.Type
 
 import java.util.function.Consumer
@@ -57,6 +59,13 @@ final class GMLLangProvider implements IModLanguageProvider {
     @Override
     Consumer<ModFileScanData> getFileVisitor() {
         return { ModFileScanData scanData ->
+            // Basically, this check will check if the mod file is a ScriptModFile
+            final file = scanData.getIModInfoData()[0].file
+            if (file.metaClass.respondsTo(null, 'compile')) {
+                // ... and if so, call `compile` on it, to compile the scripts and re-scan the files for metadata
+                compile(file, scanData)
+            }
+
             final Map<String, IModLanguageLoader> mods = scanData.annotations
                 .findAll { it.annotationType() == GMOD_TYPE }
                 .collect { new GMLLangLoader(it.clazz().className, it.annotationData()['value'] as String) }
@@ -64,6 +73,11 @@ final class GMLLangProvider implements IModLanguageProvider {
                 .collectEntries { [it.modId, it] }
             scanData.addLanguageLoader mods
         }
+    }
+
+    @CompileDynamic
+    private static void compile(IModFile file, ModFileScanData scanData) {
+        file.compile(scanData)
     }
 
     @Override

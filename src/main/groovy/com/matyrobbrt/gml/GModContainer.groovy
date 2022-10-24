@@ -87,6 +87,7 @@ final class GModContainer extends ModContainer {
             log.debug('Loading mod class {} for {}', modClass.name, this.modId)
             def modCtor = resolveCtor()
             this.mod = modCtor.parameterTypes.length > 0 ? modCtor.newInstance(this) : modCtor.newInstance()
+            if (mod instanceof Script) mod.run()
             log.debug('Successfully loaded mod {}', this.modId)
             injectEBS()
         } catch (final Throwable t) {
