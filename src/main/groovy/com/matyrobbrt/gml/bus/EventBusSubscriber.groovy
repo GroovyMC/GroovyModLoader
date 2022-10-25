@@ -29,6 +29,12 @@ import com.matyrobbrt.gml.bus.type.ForgeBus
 import com.matyrobbrt.gml.util.Environment
 import net.minecraftforge.api.distmarker.Dist
 
+import java.lang.annotation.Documented
+import java.lang.annotation.ElementType
+import java.lang.annotation.Retention
+import java.lang.annotation.RetentionPolicy
+import java.lang.annotation.Target
+
 /**
  * Annotate a class which will be subscribed to an Event Bus at mod construction time.
  * Defaults to subscribing to the {@link ForgeBus forge bus}
@@ -36,6 +42,9 @@ import net.minecraftforge.api.distmarker.Dist
  *
  * @see BusType
  */
+@Documented
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
 @interface EventBusSubscriber {
     /**
      * Specify the bus to listen to.

@@ -30,12 +30,15 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.fml.loading.FMLEnvironment
+import net.minecraftforge.fml.loading.moddiscovery.ModFile
 import net.minecraftforge.forgespi.language.ILifecycleEvent
 import net.minecraftforge.forgespi.language.IModLanguageProvider
 import net.minecraftforge.forgespi.language.ModFileScanData
 import net.minecraftforge.forgespi.locating.IModFile
 import org.objectweb.asm.Type
 
+import java.nio.file.FileSystem
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.function.Consumer
 import java.util.function.Supplier
 
@@ -49,6 +52,7 @@ final class GMLLangProvider implements IModLanguageProvider {
             // Only load mappings in prod
             MappingsProvider.INSTANCE.startMappingsSetup()
         }
+        ModLocatorInjector.inject()
     }
 
     @Override
@@ -61,7 +65,7 @@ final class GMLLangProvider implements IModLanguageProvider {
         return { ModFileScanData scanData ->
             // Basically, this check will check if the mod file is a ScriptModFile
             final file = scanData.getIModInfoData()[0].file
-            if (file.metaClass.respondsTo(null, 'compile')) {
+            if (file.fileName.endsWith('.groovy')) {
                 // ... and if so, call `compile` on it, to compile the scripts and re-scan the files for metadata
                 compile(file, scanData)
             }
@@ -77,7 +81,7 @@ final class GMLLangProvider implements IModLanguageProvider {
 
     @CompileDynamic
     private static void compile(IModFile file, ModFileScanData scanData) {
-        file.compile(scanData)
+        new ScriptFileCompiler((FileSystem)file.fs, (String)file.modId, (String)file.rootPackage, (AtomicBoolean)file.wasCompiled, (ModFile)file).compile(scanData)
     }
 
     @Override

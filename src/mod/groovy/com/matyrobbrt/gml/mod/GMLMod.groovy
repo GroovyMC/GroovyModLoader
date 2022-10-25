@@ -24,9 +24,21 @@
 
 package com.matyrobbrt.gml.mod
 
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import com.matyrobbrt.gml.GMod
+import com.matyrobbrt.gml.bus.EventBusSubscriber
+import com.matyrobbrt.gml.bus.type.ModBus
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import net.minecraft.SharedConstants
+import net.minecraft.server.packs.PackType
+import net.minecraftforge.eventbus.api.SubscribeEvent
+import net.minecraftforge.fml.ModList
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
+import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent
+
+import java.nio.file.Files
 
 @GMod('gml')
 @CompileStatic
@@ -34,5 +46,28 @@ import groovy.util.logging.Slf4j
 final class GMLMod {
     GMLMod() {
         log.info('Initialised GML mod. Version: {}', getClass().getPackage().implementationVersion)
+    }
+
+    @CompileStatic
+    @EventBusSubscriber(modId = 'gml', value = ModBus)
+    static class PackMcMetaSetup {
+        private static final Gson GSON = new Gson()
+        @SubscribeEvent
+        static void onCommonSetup(final FMLConstructModEvent event) {
+            ModList.get().modFiles.each { // TODO - still seems to be too late?
+                if (it.file.fileName.endsWith('.groovy')) {
+                    // This is a groovy script, inject the pack.mcmeta
+                    final mcmetaPath = it.file.findResource('pack.mcmeta')
+                    if (Files.notExists(mcmetaPath)) {
+                        final pack = new JsonObject()
+                        pack.addProperty("description", it.mods[0].displayName + ' Resources')
+                        pack.addProperty("pack_format", PackType.CLIENT_RESOURCES.getVersion(SharedConstants.getCurrentVersion()))
+                        pack.addProperty("forge:resource_pack_format", PackType.CLIENT_RESOURCES.getVersion(SharedConstants.getCurrentVersion()))
+                        pack.addProperty("forge:data_pack_format", PackType.SERVER_DATA.getVersion(SharedConstants.getCurrentVersion()))
+                        Files.writeString(mcmetaPath, GSON.toJson(pack))
+                    }
+                }
+            }
+        }
     }
 }

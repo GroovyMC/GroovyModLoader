@@ -1,10 +1,14 @@
 package com.matyrobbrt.gml.scriptmods;
 
 import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Feature;
 import com.google.common.jimfs.Jimfs;
+import com.google.common.jimfs.PathType;
 import com.matyrobbrt.gml.scriptmods.cfg.ConfigurableBuilder;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
+import cpw.mods.niofs.union.UnionFileSystemProvider;
+import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.loading.LogMarkers;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
@@ -22,22 +26,21 @@ import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.spi.FileSystemProvider;
 import java.security.CodeSigner;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
 public class ScriptModLocator implements IModLocator {
+    private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fsp->fsp.getScheme().equals("union")).findFirst().orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptModLocator.class);
     @Override
     public List<ModFileOrException> scanMods() {
         final var files = new ArrayList<ModFileOrException>();
         getScanDirs().forEach(LamdbaExceptionUtils.rethrowConsumer(dir -> {
-            try (final var stream = Files.list(dir)) {
+            try (final var stream = Files.list(dir).filter(Files::isRegularFile)) {
                 stream.map(this::createMod).forEach(files::add);
             }
         }));
@@ -70,24 +73,33 @@ public class ScriptModLocator implements IModLocator {
         return true;
     }
 
-    protected IModLocator.ModFileOrException createMod(Path inPath) {
+    @SuppressWarnings("resource")
+    protected ModFileOrException createMod(Path inPath) {
         LOGGER.info("Creating mod info for script mod {}", inPath);
-        var modId = inPath.getFileName().toString().replace(".groovy", "");
+        var modId = inPath.getFileName().toString().toLowerCase(Locale.ROOT).replace(".groovy", "");
         FileSystem fs;
         try {
             var method = MethodHandles.privateLookupIn(Jimfs.class, MethodHandles.lookup()).findStatic(Jimfs.class, "newFileSystem", MethodType.methodType(FileSystem.class, URI.class, Configuration.class));
-            fs = (FileSystem) method.invoke(new java.net.URI("jimfs", "mod#" + modId, null, null), Configuration.windows());
+            fs = (FileSystem) method.invoke(new URI("jimfs", "mod#" + modId, null, null), Configuration.builder(PathType.unix())
+                    .setRoots("/")
+                    .setWorkingDirectory("/")
+                    .setAttributeViews("basic")
+                    .setSupportedFeatures(Feature.SECURE_DIRECTORY_STREAM, Feature.FILE_CHANNEL)
+                    .build());
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
 
         try {
             // This file is the main file of the mod, so let's add it as Main.groovy
-            Files.write(fs.getPath("scripts", "Main.groovy"), Files.readAllBytes(inPath));
+            var mainPath = fs.getPath("scripts", "Main.groovy");
+            Files.createDirectories(mainPath.getParent());
+            Files.write(mainPath, Files.readAllBytes(inPath));
         } catch (IOException e) {
             LOGGER.error("Failed to set up script mod: ", e);
             throw new RuntimeException(e);
         }
+        var union = UFSP.newFileSystem((a, b) -> true, fs.getPath("/"));
 
         var manifest = new Manifest();
         manifest.getMainAttributes().putValue("Implementation-Version", "1.0.0");
@@ -106,17 +118,17 @@ public class ScriptModLocator implements IModLocator {
 
             @Override
             public URI uri() {
-                return inPath.toUri();
+                return null;
             }
 
             @Override
             public Optional<URI> findFile(String name) {
-                return Optional.of(fs.getPath(name)).filter(Files::exists).map(Path::toUri);
+                return Optional.of(union.getPath(name)).filter(Files::exists).map(Path::toUri);
             }
 
             @Override
             public Optional<InputStream> open(String name) {
-                return Optional.of(fs.getPath(name)).filter(Files::exists).map(LamdbaExceptionUtils.rethrowFunction(Files::newInputStream));
+                return Optional.of(union.getPath(name)).filter(Files::exists).map(LamdbaExceptionUtils.rethrowFunction(Files::newInputStream));
             }
 
             @Override
@@ -132,7 +144,8 @@ public class ScriptModLocator implements IModLocator {
 
         var conf = new ConfigurableBuilder()
                 .add("modLoader", "gml")
-                .add("loaderVersion", "[1.0.0,)")
+                .add("loaderVersion", "[1,)")
+                .add("license", "All Rights Reserved")
                 .addList("mods", new ConfigurableBuilder()
                         .add("modId", modId)
                         .add("version", "1.0.0"))
@@ -140,10 +153,10 @@ public class ScriptModLocator implements IModLocator {
         var mod = new ScriptModFile(sj, this, file -> new ModFileInfo((ModFile) file, conf, List.of()), modId, modId);
 
         mjm.setModFile(mod);
-        return new IModLocator.ModFileOrException(mod, null);
+        return new ModFileOrException(mod, null);
     }
 
     public List<Path> getScanDirs() {
-        return List.of(Path.of("mods/scripts"));
+        return List.of(FMLPaths.GAMEDIR.get().resolve("mods/scripts"));
     }
 }

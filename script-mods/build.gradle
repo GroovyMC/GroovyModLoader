@@ -1,3 +1,5 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '7.1.2'
@@ -33,20 +35,27 @@ dependencies {
 
 shadowJar {
     configurations = [project.configurations.shadow]
+    // Exclude the FS service as it will screw us in dev
+    exclude 'META-INF/services/java.nio.file.spi.FileSystemProvider'
+
+    // TODO - exclude these deps when we get them to not be relocated
+    // dependencies {
+    //    exclude(dependency('com.google.code.gson:gson:.*'))
+    //    exclude(dependency('com.google.guava:guava:.*'))
+    // }
 }
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
-
-task relocateShadowJar(type: ConfigureShadowRelocation) {
+tasks.register('relocateShadowJar', ConfigureShadowRelocation) {
     target = tasks.shadowJar
-    prefix = 'com.matyrobbrt.gml.scriptmods.shadow' // Default value is "shadow"
-
+    prefix = 'com.matyrobbrt.gml.scriptmods.shadow'
 }
 
 tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
 jar {
     manifest.attributes([
+            'Automatic-Module-Name': 'com.matyrobbrt.gml.scriptmods',
+            'FMLModType': 'LIBRARY',
             'Implementation-Name': 'GScriptMods',
             'Implementation-Version': version
     ])

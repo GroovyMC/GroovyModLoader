@@ -30,6 +30,9 @@ println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty '
 
 minecraft {
     mappings channel: 'parchment', version: '1.18.2-2022.07.17-1.19'
+    runs {
+        client {}
+    }
 }
 
 configurations {
@@ -48,8 +51,6 @@ configurations {
 
     groovy
     globalCompile.extendsFrom(groovy)
-
-    runtimeOnly.extendsFrom(groovy)
 
     include
 }
@@ -391,4 +392,19 @@ static Element createDependency(Document owner, String group, String name, Strin
     sub.appendChild scopeEl
 
     return sub
+}
+
+project(':script-mods').afterEvaluate {
+    rootProject.dependencies {
+        runtimeOnly files(
+                tasks.fullJar.archiveFile.get().asFile,
+                project(':script-mods').tasks.shadowJar.archiveFile.get().asFile
+        )
+    }
+    rootProject.tasks.whenTaskAdded {
+        if (it.name == 'runClient') {
+            it.dependsOn(':fullJar')
+            it.dependsOn(':script-mods:shadowJar')
+        }
+    }
 }
