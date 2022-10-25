@@ -30,7 +30,7 @@ class ModLocatorInjector {
     private static final Field candidateModsField = ModValidator.class.getDeclaredField('candidateMods')
     private static final Field brokenFilesField = ModValidator.class.getDeclaredField('brokenFiles')
 
-
+    // Modlocators aren't JiJable, so let's use some hacks to load script mods
     @SuppressWarnings('UnnecessaryQualifiedReference')
     static void inject() {
         if (wasInjected) return; wasInjected = true
