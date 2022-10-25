@@ -52,7 +52,7 @@ class ModLocatorInjector {
         brokenFiles.addAll(scanResult.stream().map {it.ex()}.filter {it !== null }.filter { it instanceof InvalidModFileException }.map { ((InvalidModFileException) it).brokenFile.file }.toList())
         brokenFiles.addAll(validateFiles(foundGoodCandidates))
         foundGoodCandidates.each {
-            // Add our candidate last as it seems like the list is reversed or something?
+            // Add our candidates first as it seems like the list is reversed or something?
             candidateMods.add(0, it)
         }
         log.info('Injected ScriptModLocator mod candidates. Found {} valid mod candidates and {} broken mod files.', candidateMods.size() - oldCandidateSize, oldBrokenSize - brokenFiles.size())
