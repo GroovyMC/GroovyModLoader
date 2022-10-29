@@ -49,6 +49,8 @@ import net.minecraftforge.forgespi.language.ModFileScanData
 import org.objectweb.asm.Type
 
 import java.lang.reflect.Constructor
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.function.Consumer
 
 @Slf4j
@@ -57,6 +59,9 @@ final class GModContainer extends ModContainer {
     private static final Type FORGE_EBS = Type.getType(ForgeBus)
     private static final Type MOD_EBS = Type.getType(ModBus)
     private static final Type EBS = Type.getType(EventBusSubscriber)
+
+    private static Integer RESOURCE_PACK_FORMAT = null
+    private static int DATA_PACK_FORMAT
 
     private final Class modClass
     private Object mod
@@ -80,6 +85,34 @@ final class GModContainer extends ModContainer {
         final module = layer.findModule(info.owningFile.moduleName()).orElseThrow()
         modClass = Class.forName(module, className)
         log.debug('Loaded GMod class {} on loader {} and module {}', className, modClass.classLoader, module)
+
+        if (info.owningFile.file.fileName.endsWith('.groovy')) {
+            if (RESOURCE_PACK_FORMAT === null) {
+                final int[] formatVersions = (int[]) Class.forName('com.matyrobbrt.gml.mod.PackMCMetaVersionsGetter', true, modClass.classLoader)
+                        .getDeclaredMethod('get')
+                        .invoke(null)
+
+                RESOURCE_PACK_FORMAT = formatVersions[0]
+                DATA_PACK_FORMAT = formatVersions[1]
+            }
+
+            // generate the pack.mcmeta for the script
+            final Path packDotMcmetaPath = info.owningFile.file.findResource('pack.mcmeta')
+            if (Files.notExists(packDotMcmetaPath)) {
+                final String json = """
+                        {
+                            "pack": {
+                                "description": "${info.displayName ?: info.modId} script resources",
+                                "pack_format": $RESOURCE_PACK_FORMAT,
+                                "forge:resource_pack_format": $RESOURCE_PACK_FORMAT,
+                                "forge:data_pack_format": $DATA_PACK_FORMAT
+                            }
+                        }
+                        """.stripIndent()
+
+                Files.writeString(packDotMcmetaPath, json)
+            }
+        }
     }
 
     private void constructMod() {
