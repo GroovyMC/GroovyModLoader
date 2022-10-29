@@ -6,7 +6,7 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
-version = '1.0.0'
+version = project.scriptmods_version
 archivesBaseName = 'script-mods'
 
 repositories {
@@ -30,8 +30,13 @@ dependencies {
     implementation "net.minecraftforge:fmlcore:${mc_version}-${forge_version}"
     implementation "net.minecraftforge:fmlloader:${mc_version}-${forge_version}"
 
-    shadow 'com.google.jimfs:jimfs:1.2'
-    implementation 'com.google.jimfs:jimfs:1.2'
+    shadow('com.google.jimfs:jimfs:1.2') {
+        exclude module: 'guava'
+        exclude module: 'jsr305'
+        exclude module: 'checker-compat-qual'
+        exclude module: 'auto-service-annotation'
+    }
+    implementation'com.google.jimfs:jimfs:1.2'
 }
 
 shadowJar {

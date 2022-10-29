@@ -1,14 +1,16 @@
+package jij
+
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import groovy.transform.Canonical
 import groovy.transform.CompileStatic
+import jij.JiJUtils
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedDependency
-import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
@@ -17,8 +19,6 @@ import org.gradle.api.tasks.*
 import javax.annotation.Nullable
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
-import java.nio.file.attribute.FileTime
-import java.util.concurrent.Callable
 import java.util.jar.Attributes
 import java.util.jar.JarFile
 import java.util.jar.JarOutputStream
@@ -37,13 +37,17 @@ abstract class ManifestTransformingJiJ extends DefaultTask {
             'META-INF/MANIFEST.MF'
     ]
     private final List<Configuration> configurations = []
-    private final ConfigurableFileCollection includedDependencies = getProject().files(() -> {
-        getProject().files(
-                getResolvedDependencies().stream().flatMap { it.allModuleArtifacts.stream() }.map { it.file }.toArray()
-        )
-    } as Callable<FileCollection>)
-    private final Map<String, String> ranges = [:]
-    private final Map<String, String> upperBounds = [:]
+    @Internal List<Configuration> getConfigurations() { configurations }
+
+    @Input
+    abstract MapProperty<String, String> getRanges()
+    @Input
+    abstract MapProperty<String, String> getUpperBounds()
+    @Input
+    abstract MapProperty<Object, Object> getManifestAttributes()
+
+    @OutputFile
+    abstract RegularFileProperty getOutput()
 
     @TaskAction
     @CompileStatic
@@ -124,11 +128,6 @@ abstract class ManifestTransformingJiJ extends DefaultTask {
         }
     }
 
-    @OutputFile
-    abstract RegularFileProperty getOutput()
-    @Input
-    abstract MapProperty<Object, Object> getManifestAttributes()
-
     void setRange(String artifact, String range) {
         ranges.put(artifact, range)
     }
@@ -137,16 +136,11 @@ abstract class ManifestTransformingJiJ extends DefaultTask {
     }
 
     String resolveRange(String artifact, String version) {
-        if (ranges.containsKey(artifact)) return ranges[artifact]
-        if (upperBounds.containsKey(artifact)) {
-            return "[${version},${upperBounds[artifact]})"
+        if (ranges.get().containsKey(artifact)) return ranges.get()[artifact]
+        if (upperBounds.get().containsKey(artifact)) {
+            return "[${version},${upperBounds.get()[artifact]})"
         }
         return null
-    }
-
-    @Classpath
-    FileCollection getIncludedDependencies() {
-        return includedDependencies
     }
 
     @Internal
@@ -164,10 +158,14 @@ abstract class ManifestTransformingJiJ extends DefaultTask {
                 .collect(Collectors.toSet())
     }
 
-    @Classpath
-    @Optional
-    List<Configuration> getConfigurations() {
-        return this.configurations
+    @InputFiles
+    FileCollection getInputDependencies() {
+        return project.files(resolvedDependencies.stream()
+                .flatMap { it.allModuleArtifacts.stream() }
+                .map { it.file }
+                .sorted()
+                .<Object>map({it})
+                .toArray(Object[]::new))
     }
 
     void setConfigurations(List<Configuration> configurations) {

@@ -3,6 +3,7 @@ import net.darkhax.curseforgegradle.TaskPublishCurseForge
 import groovy.transform.CompileStatic
 import org.w3c.dom.Document
 import org.w3c.dom.Element
+import jij.*
 
 plugins {
     id 'groovy'
@@ -176,7 +177,6 @@ final manifestAttr = [
         'Implementation-Title': project.name,
         'Implementation-Version': project.version,
         'Implementation-Vendor' : 'GroovyMC',
-        'Implementation-Timestamp': new Date().format(/yyyy-MM-dd'T'HH:mm:ssZ/),
         'BundledGroovyVersion': project.groovy_version,
         'GitCommit': getGitCommit(),
         'FMLModType' : 'LANGPROVIDER',
@@ -194,8 +194,7 @@ tasks.create('testJar', Jar) {
             'Specification-Version': '1',
             'Implementation-Title': 'test',
             'Implementation-Version': '12.12',
-            'Implementation-Vendor': 'Paint_Ninja',
-            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+            'Implementation-Vendor': 'Paint_Ninja'
     ])
 }
 
@@ -254,6 +253,17 @@ tasks.create('fullJar', Jar) {
         into 'META-INF/jarjar'
     }
 }
+project(':script-mods').afterEvaluate {
+    rootProject.tasks.named('fullJar', Jar) {
+        final scriptModsJar = project(':script-mods').tasks.shadowJar
+        dependsOn(scriptModsJar)
+        final File scriptModsOut = scriptModsJar.archiveFile.get().asFile
+        from(scriptModsOut) {
+            into 'META-INF/jarjar'
+            rename scriptModsOut.name, 'script-mods.jar'
+        }
+    }
+}
 
 jar {
     from sourceSets.extension.output
@@ -298,6 +308,7 @@ private void makeJarJar(File path) {
     final groovy = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'groovy-fat', project.groovy_version, 'groovy.jar',
         "[$groovy_version,$groovy_next_major)")
     final mod = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'mod', project.version.toString(), 'mod.jar', "[$version,)")
+    final scriptMods = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'script-mods', project.scriptmods_version,'script-mods.jar', "[${project.scriptmods_version},)")
     JiJUtils.writeJiJ(path, groovy, mod)
 }
 
@@ -402,14 +413,12 @@ static Element createDependency(Document owner, String group, String name, Strin
 project(':script-mods').afterEvaluate {
     rootProject.dependencies {
         runtimeOnly files(
-                tasks.fullJar.archiveFile.get().asFile,
-                project(':script-mods').tasks.shadowJar.archiveFile.get().asFile
+                tasks.fullJar.archiveFile.get().asFile
         )
     }
     rootProject.tasks.whenTaskAdded {
         if (it.name == 'runClient' || it.name == 'runServer') {
             it.dependsOn(':fullJar')
-            it.dependsOn(':script-mods:shadowJar')
         }
     }
 }
