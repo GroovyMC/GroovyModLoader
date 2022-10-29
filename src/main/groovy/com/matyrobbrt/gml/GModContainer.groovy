@@ -28,7 +28,9 @@ import com.matyrobbrt.gml.bus.EventBusSubscriber
 import com.matyrobbrt.gml.bus.GModEventBus
 import com.matyrobbrt.gml.bus.type.ForgeBus
 import com.matyrobbrt.gml.bus.type.ModBus
+import com.matyrobbrt.gml.internal.ScriptFileCompiler
 import com.matyrobbrt.gml.util.Environment
+import com.matyrobbrt.gml.util.Reflections
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
@@ -48,9 +50,8 @@ import net.minecraftforge.forgespi.language.IModInfo
 import net.minecraftforge.forgespi.language.ModFileScanData
 import org.objectweb.asm.Type
 
+import java.lang.invoke.MethodType
 import java.lang.reflect.Constructor
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.function.Consumer
 
 @Slf4j
@@ -59,9 +60,7 @@ final class GModContainer extends ModContainer {
     private static final Type FORGE_EBS = Type.getType(ForgeBus)
     private static final Type MOD_EBS = Type.getType(ModBus)
     private static final Type EBS = Type.getType(EventBusSubscriber)
-
-    private static Integer RESOURCE_PACK_FORMAT = null
-    private static int DATA_PACK_FORMAT
+    private static Consumer<IModInfo> packMetaInjector
 
     private final Class modClass
     private Object mod
@@ -86,33 +85,18 @@ final class GModContainer extends ModContainer {
         modClass = Class.forName(module, className)
         log.debug('Loaded GMod class {} on loader {} and module {}', className, modClass.classLoader, module)
 
-        if (info.owningFile.file.fileName.endsWith('.groovy')) {
-            if (RESOURCE_PACK_FORMAT === null) {
-                final int[] formatVersions = (int[]) Class.forName('com.matyrobbrt.gml.mod.PackMCMetaVersionsGetter', true, modClass.classLoader)
-                        .getDeclaredMethod('get')
-                        .invoke(null)
-
-                RESOURCE_PACK_FORMAT = formatVersions[0]
-                DATA_PACK_FORMAT = formatVersions[1]
-            }
-
+        if (ScriptFileCompiler.isScriptMod(info.owningFile.file)) {
             // generate the pack.mcmeta for the script
-            final Path packDotMcmetaPath = info.owningFile.file.findResource('pack.mcmeta')
-            if (Files.notExists(packDotMcmetaPath)) {
-                final String json = """
-                        {
-                            "pack": {
-                                "description": "${info.displayName ?: info.modId} script resources",
-                                "pack_format": $RESOURCE_PACK_FORMAT,
-                                "forge:resource_pack_format": $RESOURCE_PACK_FORMAT,
-                                "forge:data_pack_format": $DATA_PACK_FORMAT
-                            }
-                        }
-                        """.stripIndent()
-
-                Files.writeString(packDotMcmetaPath, json)
-            }
+            packMetaInjector(modClass.classLoader).accept(info)
         }
+    }
+
+    private static Consumer<IModInfo> packMetaInjector(ClassLoader loader) {
+        if (packMetaInjector !== null) return packMetaInjector
+        final int[] formatVersions = (int[]) Class.forName('com.matyrobbrt.gml.mod.PackMCMetaVersionsGetter', true, loader)
+                .getDeclaredMethod('get')
+                .invoke(null)
+        return packMetaInjector = Reflections.<Consumer<IModInfo>>constructor(ClassLoader.forName('com.matyrobbrt.gml.scriptmods.PackMetaInjector'), MethodType.methodType(void, int, int)).call(formatVersions[0], formatVersions[1])
     }
 
     private void constructMod() {

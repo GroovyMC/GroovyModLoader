@@ -23,11 +23,11 @@ configurations {
 }
 
 dependencies {
+    implementation 'cpw.mods:securejarhandler:2.1.4'
+    implementation 'net.minecraftforge:forgespi:6.0.0'
+    implementation "org.apache.groovy:groovy:${groovy_version}"
     implementation "net.minecraftforge:fmlcore:${mc_version}-${forge_version}"
     implementation "net.minecraftforge:fmlloader:${mc_version}-${forge_version}"
-    implementation 'net.minecraftforge:forgespi:6.0.0'
-    implementation 'cpw.mods:securejarhandler:2.1.4'
-    implementation "org.apache.groovy:groovy:${groovy_version}"
 
     shadow 'com.google.jimfs:jimfs:1.2'
     implementation 'com.google.jimfs:jimfs:1.2'

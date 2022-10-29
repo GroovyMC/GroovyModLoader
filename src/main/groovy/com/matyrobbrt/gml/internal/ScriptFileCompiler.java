@@ -8,6 +8,7 @@ import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.moddiscovery.ModClassVisitor;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.forgespi.language.ModFileScanData;
+import net.minecraftforge.forgespi.locating.IModFile;
 import org.codehaus.groovy.control.BytecodeProcessor;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -33,7 +34,7 @@ import java.util.stream.Stream;
 
 import static org.objectweb.asm.Opcodes.*;
 
-class ScriptFileCompiler {
+public final class ScriptFileCompiler {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private final FileSystem fs;
@@ -58,9 +59,9 @@ class ScriptFileCompiler {
             // Compile the classes
             compileClasses(stream.toList());
 
-            final var mainClassPath = fs.getPath(rootPackage, "Main.class");
+            Path mainClassPath = fs.getPath(rootPackage, "Main.class");
             // And if we don't have a main class, generate it
-            if (!Files.exists(mainClassPath)) {
+            if (!Files.exists(mainClassPath) && !Files.exists(fs.getPath(rootPackage, "main.class"))) {
                 // If the main class doesn't exist, create it
                 final var cw = new org.objectweb.asm.ClassWriter(org.objectweb.asm.ClassWriter.COMPUTE_FRAMES);
                 generateMainClass().accept(cw);
@@ -97,7 +98,7 @@ class ScriptFileCompiler {
 
     private CompilationUnit.ClassgenCallback createCollector(CompilationUnit unit) {
         return (classVisitor, classNode) -> {
-            if (classNode.getNameWithoutPackage().equals("Main")) {
+            if (classNode.getNameWithoutPackage().equalsIgnoreCase("main")) {
                 final var annotation = classVisitor.visitAnnotation("Lcom/matyrobbrt/gml/GMod;", true);
                 annotation.visit("value", modId);
                 annotation.visitEnd();
@@ -108,11 +109,13 @@ class ScriptFileCompiler {
                 data = bytecodePostprocessor.processBytecode(classNode.getName(), data);
             }
             Path path = fs.getPath(classNode.getName().replace('.', '/') + ".class");
-            final byte[] finalData = data;
-            LamdbaExceptionUtils.uncheck(() -> {
-                Files.createDirectories(path.getParent());
-                Files.write(path, finalData);
-            });
+            try {
+                if (path.getParent() != null) Files.createDirectories(path.getParent());
+                Files.write(path, data);
+            } catch (IOException e) {
+                LOGGER.error("Exception saving script: ", e);
+                throw new RuntimeException(e);
+            }
         };
     }
 
@@ -174,5 +177,9 @@ class ScriptFileCompiler {
         }
         node.visitEnd();
         return node;
+    }
+
+    public static boolean isScriptMod(IModFile file) {
+        return (boolean)file.getModFileInfo().getFileProperties().getOrDefault("groovyscript", false);
     }
 }

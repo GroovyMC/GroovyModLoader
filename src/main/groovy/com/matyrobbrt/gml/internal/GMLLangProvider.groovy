@@ -65,7 +65,7 @@ final class GMLLangProvider implements IModLanguageProvider {
         return { ModFileScanData scanData ->
             // Basically, this check will check if the mod file is a ScriptModFile
             final file = scanData.getIModInfoData()[0].file
-            if (file.fileName.endsWith('.groovy')) {
+            if (ScriptFileCompiler.isScriptMod(file)) {
                 // ... and if so, call `compile` on it, to compile the scripts and re-scan the files for metadata
                 compile(file, scanData)
             }
