@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) Matyrobbrt
+ * SPDX-License-Identifier: MIT
+ */
+
 package com.matyrobbrt.gml.util;
 
 import sun.misc.Unsafe;

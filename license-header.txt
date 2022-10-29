@@ -1,0 +1,2 @@
+Copyright (c) Matyrobbrt
+SPDX-License-Identifier: MIT

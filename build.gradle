@@ -36,6 +36,15 @@ minecraft {
     }
 }
 
+allprojects {
+    afterEvaluate {
+        license {
+            header = rootProject.file('license-header.txt')
+            exclude('**/mods.groovy')
+        }
+    }
+}
+
 configurations {
     globalCompile
     compileOnly.extendsFrom(globalCompile)
@@ -158,11 +167,6 @@ tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
     task.groovyOptions.fork = true
     task.groovyOptions.encoding = 'UTF-8'
     task.groovyOptions.optimizationOptions.indy = true
-}
-
-license {
-    header = rootProject.file('LICENSE')
-    exclude('**/mods.groovy')
 }
 
 final manifestAttr = [
