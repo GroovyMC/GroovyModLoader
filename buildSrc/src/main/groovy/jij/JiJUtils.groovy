@@ -32,7 +32,7 @@ class JiJUtils {
         return subJson
     }
 
-    static void writeJiJ(File path, JsonObject ... objects) {
+    static void writeJiJ(File path, List<JsonObject> objects) {
         Files.createDirectories(path.toPath().parent)
         try (final out = Files.newOutputStream(path.toPath())) {
             final var fullJson = new JsonObject()
@@ -43,5 +43,9 @@ class JiJUtils {
                     .setPrettyPrinting().create()
                     .toJson(fullJson).getBytes(StandardCharsets.UTF_8))
         }
+    }
+
+    static void writeJiJ(File path, JsonObject... objects) {
+        writeJiJ(path, List.of(objects))
     }
 }

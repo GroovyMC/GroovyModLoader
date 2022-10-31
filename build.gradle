@@ -1,4 +1,5 @@
 import io.github.groovymc.modsdotgroovy.ConvertToTomlTask
+import jij.transform.JiJDependencyFixerTransformer
 import net.darkhax.curseforgegradle.TaskPublishCurseForge
 import groovy.transform.CompileStatic
 import org.w3c.dom.Document
@@ -64,6 +65,7 @@ configurations {
     globalCompile.extendsFrom(groovy)
 
     include
+    testConfig
 }
 
 sourceSets {
@@ -92,7 +94,7 @@ tasks.create('modModsDotGroovyToToml', ConvertToTomlTask) {
     it.configureForSourceSet(sourceSets.mod)
 }
 
-tasks.create('groovyJar', ManifestTransformingJiJ)
+tasks.create('groovyJar', JarInJarTask)
 
 // GML is written in pure Groovy, so delete the empty java folder in each of the sourceSets
 sourceSets.each { sourceSet ->
@@ -123,8 +125,8 @@ dependencies {
 
     groovyLibs.each {
         groovy groovyDep(it)
-        groovyJar.setRange(groovyId(it), "[${groovy_version},${groovy_next_major})")
     }
+    testConfig groovyDep('nio')
 
     transformCompileOnly sourceSets.main.output
 
@@ -134,9 +136,7 @@ dependencies {
     modCompileOnly sourceSets.main.output
 
     compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.1.0'
-    include("io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}") {
-        groovyJar.setRange("io.github.groovymc.cgl:cgl-${mc_version}-forge", "[${cgl_version},)")
-    }
+    include "io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}"
 }
 
 String groovyDep(String name) {
@@ -198,30 +198,34 @@ tasks.create('testJar', Jar) {
     ])
 }
 
-tasks.named('groovyJar', ManifestTransformingJiJ).configure {
+tasks.named('groovyJar', JarInJarTask).configure { JarInJarTask it ->
     group('build')
-    output.set(project.file("$buildDir/libs/${archivesBaseName}-${version}-groovy.jar"))
-    configurations = [project.configurations.groovy, project.configurations.include] // TODO cgl should be in another jar
-    manifestAttributes.set(manifestAttr + [
+    it.archiveBaseName.set('groovy-fat')
+    it.fromConfiguration(project.configurations.groovy) {
+        ['jackson-databind', 'jackson-core', 'jackson-annotations'].each {
+            nextMajorBound "com.fasterxml.jackson.core:$it"
+        }
+        nextMajorBound 'com.fasterxml.jackson.dataformat:jackson-dataformat-toml'
+        groovyLibs.each {
+            nextMajorBound "org.apache.groovy:${it == 'stdlib' ? 'groovy' : ('groovy-' + it)}"
+        }
+    }
+    it.manifest.attributes(manifestAttr + [
             'Specification-Title': 'GML-GroovyFatJar',
             'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
     ])
-
-    [
-            'jackson-databind', 'jackson-core', 'jackson-annotations'
-    ].each {
-        setUpperBound('com.fasterxml.jackson.core:' + it, '3.0.0')
+    it.transformerFunction = {
+        new JiJDependencyFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
     }
-    setUpperBound('com.fasterxml.jackson.dataformat:jackson-dataformat-toml', '3.0.0')
 }
 
 tasks.create('modJar', Jar) {
     from sourceSets.mod.output
     manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
-    classifier 'mod'
+    archiveBaseName.set('mod')
 }
 
-tasks.create('fullJar', Jar) {
+tasks.create('fullJar', JarInJarTask) {
     from sourceSets.main.output
     from sourceSets.transform.output
     from sourceSets.extension.output
@@ -231,37 +235,15 @@ tasks.create('fullJar', Jar) {
     archiveClassifier.set 'all'
     group 'build'
 
-    dependsOn(groovyJar)
-    final File groovyOut = groovyJar.output.get().asFile
-    from(groovyOut) {
-        into 'META-INF/jarjar'
-        rename groovyOut.name, 'groovy.jar'
-    }
-
-    dependsOn(modJar)
-    final File modOut = modJar.archiveFile.get().asFile
-    from(modOut) {
-        into 'META-INF/jarjar'
-        rename modOut.name, 'mod.jar'
-    }
-
-    final path = project.file("$buildDir/jarjar/metadata.json")
-    doFirst {
-        makeJarJar(path)
-    }
-    from(path) {
-        into 'META-INF/jarjar'
+    fromJar(tasks.modJar)
+    fromJar(tasks.groovyJar)
+    fromConfiguration(project.configurations.include) {
+        nextMajorBound "io.github.groovymc.cgl:cgl-${mc_version}-forge"
     }
 }
 project(':script-mods').afterEvaluate {
-    rootProject.tasks.named('fullJar', Jar) {
-        final scriptModsJar = project(':script-mods').tasks.shadowJar
-        dependsOn(scriptModsJar)
-        final File scriptModsOut = scriptModsJar.archiveFile.get().asFile
-        from(scriptModsOut) {
-            into 'META-INF/jarjar'
-            rename scriptModsOut.name, 'script-mods.jar'
-        }
+    rootProject.tasks.named('fullJar', JarInJarTask) {
+        fromJar(project(':script-mods').tasks.shadowJar)
     }
 }
 
@@ -302,14 +284,6 @@ tasks.create('transformSources', Jar) {
     archiveBaseName.set('transform')
     archiveClassifier.set('sources')
     destinationDirectory.set(transformDest)
-}
-
-private void makeJarJar(File path) {
-    final groovy = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'groovy-fat', project.groovy_version, 'groovy.jar',
-        "[$groovy_version,$groovy_next_major)")
-    final mod = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'mod', project.version.toString(), 'mod.jar', "[$version,)")
-    final scriptMods = JiJUtils.makeJarJson('com.matyrobbrt.gml', 'script-mods', project.scriptmods_version,'script-mods.jar', "[${project.scriptmods_version},)")
-    JiJUtils.writeJiJ(path, groovy, mod)
 }
 
 static String getGitCommit() {
