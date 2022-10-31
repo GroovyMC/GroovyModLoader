@@ -43,14 +43,20 @@ public class ScriptModLocator implements IModLocator {
     private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fsp->fsp.getScheme().equals("union")).findFirst().orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptModLocator.class);
     public static final String SCRIPTS_DIR = "scripts";
+    private static final boolean INJECTED_FS;
 
     static {
+        boolean managedFsInjection;
         try {
             //noinspection deprecation
             FileSystemInjector.injectFileSystem(new SystemJimfsFileSystemProvider());
+            managedFsInjection = true;
         } catch (Exception exception) {
             LOGGER.error("Encountered exception injecting Jimfs FS: ", exception);
+            managedFsInjection = false;
         }
+        INJECTED_FS = managedFsInjection;
+
         LOGGER.info("Injected Jimfs file system");
     }
 
@@ -98,6 +104,7 @@ public class ScriptModLocator implements IModLocator {
     protected ModFileOrException createMod(Path inPath) {
         LOGGER.info("Creating mod info for script mod {}", inPath);
         var modId = withoutExtension(inPath).toLowerCase(Locale.ROOT);
+
         final FileSystem fs;
         try {
             fs = Jimfs.newFileSystem(Configuration.builder(PathType.unix())
@@ -136,7 +143,18 @@ public class ScriptModLocator implements IModLocator {
             LOGGER.error("Failed to set up script mod: ", e);
             throw new RuntimeException(e);
         }
-        var union = UFSP.newFileSystem((a, b) -> true, fs.getPath("/"));
+
+        final PathGetter pathGetter;
+        if (INJECTED_FS) {
+            // We managed to do unsafe hacks to inject the file system.
+            // No need to use union as a delegate
+            pathGetter = fs::getPath;
+        } else {
+            // Unfortunately, we didn't manage to inject the file system.
+            // So, we use union as a delegate so that class loaders can use the URIs to query classes
+            var union = UFSP.newFileSystem((a, b) -> true, fs.getPath("/"));
+            pathGetter = union::getPath;
+        }
 
         var manifest = new Manifest();
         manifest.getMainAttributes().putValue("Implementation-Version", "1.0.0");
@@ -160,12 +178,12 @@ public class ScriptModLocator implements IModLocator {
 
             @Override
             public Optional<URI> findFile(String name) {
-                return Optional.of(union.getPath(name)).filter(Files::exists).map(Path::toUri);
+                return Optional.of(pathGetter.getPath(name)).filter(Files::exists).map(Path::toUri);
             }
 
             @Override
             public Optional<InputStream> open(String name) {
-                return Optional.of(union.getPath(name)).filter(Files::exists).map(LamdbaExceptionUtils.rethrowFunction(Files::newInputStream));
+                return Optional.of(pathGetter.getPath(name)).filter(Files::exists).map(LamdbaExceptionUtils.rethrowFunction(Files::newInputStream));
             }
 
             @Override
@@ -206,5 +224,10 @@ public class ScriptModLocator implements IModLocator {
 
     public List<Path> getScanDirs() {
         return List.of(FMLPaths.GAMEDIR.get().resolve("mods/scripts"));
+    }
+
+    @FunctionalInterface
+    private interface PathGetter {
+        Path getPath(String first, String... more);
     }
 }
