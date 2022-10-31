@@ -1,0 +1,27 @@
+import io.github.groovymc.modsdotgroovy.ConvertToTomlTask
+import io.github.groovymc.modsdotgroovy.ModsDotGroovy
+
+buildscript {
+    repositories {
+        maven {
+            name 'Modding Inquisition Releases'
+            url 'https://maven.moddinginquisition.org/releases'
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'io.github.groovymc.modsdotgroovy', name: 'ModsDotGroovy', version: "${mdg_plugin_version}"
+    }
+}
+apply plugin: ModsDotGroovy
+
+modsDotGroovy {
+    dslVersion = '1.0.2' // Can be replaced with any existing DSL version
+    automaticConfiguration = false
+}
+tasks.create('testModsDotGroovyToToml', ConvertToTomlTask) {
+    it.configureForSourceSet(sourceSets.test)
+}
+tasks.create('modModsDotGroovyToToml', ConvertToTomlTask) {
+    it.configureForSourceSet(sourceSets.mod)
+}

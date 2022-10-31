@@ -1,0 +1,129 @@
+import jij.JarInJarTask
+import jij.transform.JiJDependencyFixerTransformer
+
+final manifestAttr = [
+        'Specification-Title': 'GroovyModLoader',
+        'Specification-Vendor': 'GroovyMC',
+        'Specification-Version': 1,
+        'Implementation-Title': project.name,
+        'Implementation-Version': project.version,
+        'Implementation-Vendor' : 'GroovyMC',
+        'BundledGroovyVersion': project.groovy_version,
+        'GitCommit': getGitCommit(),
+        'FMLModType' : 'LANGPROVIDER',
+        'Built-on-Minecraft': project.mc_version,
+        'DownloadHomepage': 'https://www.curseforge.com/minecraft/mc-mods/gml/files'
+]
+
+tasks.create('groovyJar', JarInJarTask) {
+    group('build')
+    archiveBaseName.set('groovy-fat')
+    fromConfiguration(project.configurations.groovy) {
+        ['jackson-databind', 'jackson-core', 'jackson-annotations'].each {
+            nextMajorBound "com.fasterxml.jackson.core:$it"
+        }
+        nextMajorBound 'com.fasterxml.jackson.dataformat:jackson-dataformat-toml'
+        project.ext.groovyLibs.each {
+            nextMajorBound groovyId(it)
+        }
+    }
+    manifest.attributes(manifestAttr + [
+            'Specification-Title': 'GML-GroovyFatJar',
+            'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
+    ])
+    transformerFunction = {
+        new JiJDependencyFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
+    }
+}
+
+tasks.create('modJar', Jar) {
+    from sourceSets.mod.output
+    manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
+    archiveBaseName.set('mod')
+}
+
+tasks.create('fullJar', JarInJarTask) {
+    from sourceSets.main.output
+    from sourceSets.transform.output
+    from sourceSets.extension.output
+    manifest.attributes(manifestAttr + [
+            'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
+    ])
+    archiveClassifier.set 'all'
+    group 'build'
+
+    fromJar(tasks.modJar)
+    fromJar(tasks.groovyJar)
+    fromConfiguration(project.configurations.include) {
+        nextMajorBound "io.github.groovymc.cgl:cgl-${mc_version}-forge"
+    }
+}
+tasks.build.dependsOn tasks.fullJar
+project(':script-mods').afterEvaluate {
+    rootProject.tasks.named('fullJar', JarInJarTask) {
+        fromJar(project(':script-mods').tasks.shadowJar)
+    }
+}
+
+tasks.named('jar', Jar).configure { Jar it ->
+    it.from sourceSets.extension.output
+    it.manifest.attributes(manifestAttr + [
+            'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
+    ])
+}
+java.withSourcesJar()
+
+groovydoc {
+    use = true
+    source(sourceSets.transform.allSource)
+    source(sourceSets.extension.allSource)
+}
+
+tasks.register('groovydocJar', Jar) { Jar it ->
+    it.classifier 'javadoc'
+    it.from groovydoc.destinationDir
+    it.dependsOn(groovydoc)
+}
+
+final transformDest = new File(buildDir, 'libs/transform')
+final transformAttr = manifestAttr + [
+        'Specification-Title': 'GML-Transform'
+]
+tasks.register('transformJar', Jar) { Jar it ->
+    it.from sourceSets.transform.output
+    it.manifest.attributes(transformAttr)
+    it.archiveBaseName.set('transform')
+    it.destinationDirectory.set(transformDest)
+}
+
+tasks.register('transformSources', Jar) { Jar it ->
+    it.from sourceSets.transform.allSource
+    it.manifest.attributes(transformAttr)
+    it.archiveBaseName.set('transform')
+    it.archiveClassifier.set('sources')
+    it.destinationDirectory.set(transformDest)
+}
+
+tasks.register('testJar', Jar) { Jar it ->
+    it.group 'build'
+    it.from sourceSets.test.output
+    it.classifier 'test'
+    it.manifest.attributes([
+            'Specification-Title': 'no',
+            'Specification-Vendor': 'Matyrobbrt',
+            'Specification-Version': '1',
+            'Implementation-Title': 'test',
+            'Implementation-Version': '12.12',
+            'Implementation-Vendor': 'Matyrobbrt'
+    ])
+}
+
+static String getGitCommit() {
+    def proc = 'git rev-parse --short HEAD'.execute()
+    proc.waitFor()
+    return proc.exitValue()? "ERROR(${proc.exitValue()})" : proc.text.trim()
+}
+
+static String groovyId(String name) {
+    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}"
+}

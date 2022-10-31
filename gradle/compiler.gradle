@@ -1,0 +1,5 @@
+tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
+    task.groovyOptions.fork = true
+    task.groovyOptions.encoding = 'UTF-8'
+    task.groovyOptions.optimizationOptions.indy = true
+}

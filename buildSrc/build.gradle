@@ -2,6 +2,8 @@ plugins {
     id 'groovy'
 }
 
+apply from: '../gradle/compiler.gradle'
+
 repositories {
     mavenCentral()
     maven {

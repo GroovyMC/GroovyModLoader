@@ -12,13 +12,9 @@ pluginManagement {
             name 'ParchmentMC'
             url 'https://maven.parchmentmc.org'
         }
-        maven {
-            name 'Modding Inquisition Releases'
-            url 'https://maven.moddinginquisition.org/releases'
-        }
         mavenCentral()
         gradlePluginPortal()
-     }
+    }
     resolutionStrategy {
         eachPlugin {
             if (requested.id.id == 'org.spongepowered.mixin')
