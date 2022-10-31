@@ -94,8 +94,6 @@ tasks.create('modModsDotGroovyToToml', ConvertToTomlTask) {
     it.configureForSourceSet(sourceSets.mod)
 }
 
-tasks.create('groovyJar', JarInJarTask)
-
 // GML is written in pure Groovy, so delete the empty java folder in each of the sourceSets
 sourceSets.each { sourceSet ->
     final javaDir = file("src/${sourceSet.name}/java/")
@@ -190,18 +188,18 @@ tasks.create('testJar', Jar) {
     classifier 'test'
     manifest.attributes([
             'Specification-Title': 'no',
-            'Specification-Vendor': 'Paint_Ninja',
+            'Specification-Vendor': 'Matyrobbrt',
             'Specification-Version': '1',
             'Implementation-Title': 'test',
             'Implementation-Version': '12.12',
-            'Implementation-Vendor': 'Paint_Ninja'
+            'Implementation-Vendor': 'Matyrobbrt'
     ])
 }
 
-tasks.named('groovyJar', JarInJarTask).configure { JarInJarTask it ->
+tasks.create('groovyJar', JarInJarTask) {
     group('build')
-    it.archiveBaseName.set('groovy-fat')
-    it.fromConfiguration(project.configurations.groovy) {
+    archiveBaseName.set('groovy-fat')
+    fromConfiguration(project.configurations.groovy) {
         ['jackson-databind', 'jackson-core', 'jackson-annotations'].each {
             nextMajorBound "com.fasterxml.jackson.core:$it"
         }
@@ -210,11 +208,11 @@ tasks.named('groovyJar', JarInJarTask).configure { JarInJarTask it ->
             nextMajorBound "org.apache.groovy:${it == 'stdlib' ? 'groovy' : ('groovy-' + it)}"
         }
     }
-    it.manifest.attributes(manifestAttr + [
+    manifest.attributes(manifestAttr + [
             'Specification-Title': 'GML-GroovyFatJar',
             'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
     ])
-    it.transformerFunction = {
+    transformerFunction = {
         new JiJDependencyFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
     }
 }
@@ -241,6 +239,7 @@ tasks.create('fullJar', JarInJarTask) {
         nextMajorBound "io.github.groovymc.cgl:cgl-${mc_version}-forge"
     }
 }
+tasks.build.dependsOn tasks.fullJar
 project(':script-mods').afterEvaluate {
     rootProject.tasks.named('fullJar', JarInJarTask) {
         fromJar(project(':script-mods').tasks.shadowJar)
@@ -384,15 +383,13 @@ static Element createDependency(Document owner, String group, String name, Strin
     return sub
 }
 
-project(':script-mods').afterEvaluate {
-    rootProject.dependencies {
-        runtimeOnly files(
-                tasks.fullJar.archiveFile.get().asFile
-        )
-    }
-    rootProject.tasks.whenTaskAdded {
-        if (it.name == 'runClient' || it.name == 'runServer') {
-            it.dependsOn(':fullJar')
-        }
+dependencies {
+    runtimeOnly files(
+            tasks.fullJar.archiveFile.get().asFile
+    )
+}
+tasks.whenTaskAdded {
+    if (it.name == 'runClient' || it.name == 'runServer') {
+        it.dependsOn(':fullJar')
     }
 }
