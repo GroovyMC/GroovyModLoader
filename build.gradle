@@ -65,7 +65,6 @@ configurations {
     globalCompile.extendsFrom(groovy)
 
     include
-    testConfig
 }
 
 sourceSets {
@@ -124,7 +123,6 @@ dependencies {
     groovyLibs.each {
         groovy groovyDep(it)
     }
-    testConfig groovyDep('nio')
 
     transformCompileOnly sourceSets.main.output
 
