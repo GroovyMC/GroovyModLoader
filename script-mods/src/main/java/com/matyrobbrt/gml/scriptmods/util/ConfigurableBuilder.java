@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-package com.matyrobbrt.gml.scriptmods.cfg;
+package com.matyrobbrt.gml.scriptmods.util;
 
 import net.minecraftforge.forgespi.language.IConfigurable;
 

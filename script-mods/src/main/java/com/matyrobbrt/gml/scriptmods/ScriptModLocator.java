@@ -9,7 +9,9 @@ import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Feature;
 import com.google.common.jimfs.Jimfs;
 import com.google.common.jimfs.PathType;
-import com.matyrobbrt.gml.scriptmods.cfg.ConfigurableBuilder;
+import com.google.common.jimfs.SystemJimfsFileSystemProvider;
+import com.matyrobbrt.gml.scriptmods.util.ConfigurableBuilder;
+import com.matyrobbrt.gml.scriptmods.util.FileSystemInjector;
 import cpw.mods.jarhandling.SecureJar;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import cpw.mods.niofs.union.UnionFileSystemProvider;
@@ -27,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.module.ModuleDescriptor;
 import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
@@ -40,6 +43,16 @@ public class ScriptModLocator implements IModLocator {
     private static final UnionFileSystemProvider UFSP = (UnionFileSystemProvider) FileSystemProvider.installedProviders().stream().filter(fsp->fsp.getScheme().equals("union")).findFirst().orElseThrow(()->new IllegalStateException("Couldn't find UnionFileSystemProvider"));
     private static final Logger LOGGER = LoggerFactory.getLogger(ScriptModLocator.class);
     public static final String SCRIPTS_DIR = "scripts";
+
+    static {
+        try {
+            //noinspection deprecation
+            FileSystemInjector.injectFileSystem(new SystemJimfsFileSystemProvider());
+        } catch (Exception exception) {
+            LOGGER.error("Encountered exception injecting Jimfs FS: ", exception);
+        }
+        LOGGER.info("Injected Jimfs file system");
+    }
 
     @Override
     public List<ModFileOrException> scanMods() {
@@ -85,12 +98,18 @@ public class ScriptModLocator implements IModLocator {
     protected ModFileOrException createMod(Path inPath) {
         LOGGER.info("Creating mod info for script mod {}", inPath);
         var modId = withoutExtension(inPath).toLowerCase(Locale.ROOT);
-        var fs = Jimfs.newFileSystem("mod#" + modId, Configuration.builder(PathType.unix())
-                .setRoots("/")
-                .setWorkingDirectory("/")
-                .setAttributeViews("basic")
-                .setSupportedFeatures(Feature.SECURE_DIRECTORY_STREAM, Feature.FILE_CHANNEL)
-                .build());
+        final FileSystem fs;
+        try {
+            fs = Jimfs.newFileSystem(Configuration.builder(PathType.unix())
+                    .setRoots("/")
+                    .setWorkingDirectory("/")
+                    .setAttributeViews("basic")
+                    .setSupportedFeatures(Feature.SECURE_DIRECTORY_STREAM, Feature.FILE_CHANNEL)
+                    .build());
+        } catch (Exception exception) {
+            LOGGER.error("Encountered exception creating fs: ", exception);
+            throw new RuntimeException(exception);
+        }
 
         try {
             if (Files.isDirectory(inPath)) {
