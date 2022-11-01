@@ -15,10 +15,10 @@ final manifestAttr = [
         'DownloadHomepage': 'https://www.curseforge.com/minecraft/mc-mods/gml/files'
 ]
 
-tasks.create('groovyJar', JarInJarTask) {
-    group('build')
-    archiveBaseName.set('groovy-fat')
-    fromConfiguration(project.configurations.groovy) {
+tasks.register('groovyJar', JarInJarTask) { JarInJarTask task ->
+    task.group('build')
+    task.archiveBaseName.set('groovy-fat')
+    task.fromConfiguration(project.configurations.groovy) {
         ['jackson-databind', 'jackson-core', 'jackson-annotations'].each {
             nextMajorBound "com.fasterxml.jackson.core:$it"
         }
@@ -27,34 +27,34 @@ tasks.create('groovyJar', JarInJarTask) {
             nextMajorBound groovyId(it)
         }
     }
-    manifest.attributes(manifestAttr + [
+    task.manifest.attributes(manifestAttr + [
             'Specification-Title': 'GML-GroovyFatJar',
             'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
     ])
-    transformerFunction = {
+    task.transformerFunction = {
         new JiJDependencyFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
     }
 }
 
-tasks.create('modJar', Jar) {
+tasks.register('modJar', Jar) {
     from sourceSets.mod.output
     manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
     archiveBaseName.set('mod')
 }
 
-tasks.create('fullJar', JarInJarTask) {
-    from sourceSets.main.output
-    from sourceSets.transform.output
-    from sourceSets.extension.output
-    manifest.attributes(manifestAttr + [
+tasks.register('fullJar', JarInJarTask) { JarInJarTask task ->
+    task.from sourceSets.main.output
+    task.from sourceSets.transform.output
+    task.from sourceSets.extension.output
+    task.manifest.attributes(manifestAttr + [
             'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
     ])
-    archiveClassifier.set 'all'
-    group 'build'
+    task.archiveClassifier.set 'all'
+    task.group 'build'
 
-    fromJar(tasks.modJar)
-    fromJar(tasks.groovyJar)
-    fromConfiguration(project.configurations.include) {
+    task.fromJar(tasks.named('modJar'))
+    task.fromJar(tasks.named('groovyJar'))
+    task.fromConfiguration(project.configurations.include) {
         nextMajorBound "io.github.groovymc.cgl:cgl-${mc_version}-forge"
     }
 }

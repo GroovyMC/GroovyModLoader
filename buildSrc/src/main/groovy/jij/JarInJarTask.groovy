@@ -6,12 +6,14 @@ import jij.JiJDependency.Provider
 import jij.hash.HashFunction
 import jij.transform.ArtifactTransformer
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 
 import java.nio.file.Files
@@ -59,6 +61,11 @@ abstract class JarInJarTask extends Jar {
 
     void fromJar(Jar jar, String versionRange = null) {
         provider(JiJDependency.fromJar(() -> jar, versionRange))
+        dependsOn(jar)
+    }
+
+    void fromJar(TaskProvider<? extends Task> jar, String versionRange = null) {
+        provider(JiJDependency.fromJar(() -> (Jar)jar.get(), versionRange))
         dependsOn(jar)
     }
 
