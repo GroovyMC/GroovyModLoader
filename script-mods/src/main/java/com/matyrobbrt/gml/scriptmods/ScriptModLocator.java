@@ -20,6 +20,7 @@ import net.minecraftforge.fml.loading.FileUtils;
 import net.minecraftforge.fml.loading.LogMarkers;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
+import net.minecraftforge.forgespi.language.IModFileInfo;
 import net.minecraftforge.forgespi.locating.IModFile;
 import net.minecraftforge.forgespi.locating.IModLocator;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.security.CodeSigner;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
@@ -58,6 +60,25 @@ public class ScriptModLocator implements IModLocator {
         INJECTED_FS = managedFsInjection;
 
         LOGGER.info("Injected Jimfs file system");
+    }
+
+    private final BiFunction<IModFile, String, IModFileInfo> infoParser;
+
+    public ScriptModLocator(BiFunction<IModFile, String, IModFileInfo> infoParser) {
+        this.infoParser = infoParser;
+    }
+
+    @SuppressWarnings("unused")
+    public ScriptModLocator() {
+        this((file, modId) -> new ModFileInfo((ModFile) file, new ConfigurableBuilder()
+                .add("modLoader", "gml")
+                .add("loaderVersion", "[1,)")
+                .add("license", "All Rights Reserved")
+                .addList("mods", new ConfigurableBuilder()
+                        .add("modId", modId)
+                        .add("version", "1.0.0"))
+                .add("properties", Map.of("groovyscript", true))
+                .build(), List.of()));
     }
 
     @Override
@@ -197,16 +218,7 @@ public class ScriptModLocator implements IModLocator {
             }
         });
 
-        var conf = new ConfigurableBuilder()
-                .add("modLoader", "gml")
-                .add("loaderVersion", "[1,)")
-                .add("license", "All Rights Reserved")
-                .addList("mods", new ConfigurableBuilder()
-                        .add("modId", modId)
-                        .add("version", "1.0.0"))
-                .add("properties", Map.of("groovyscript", true))
-                .build();
-        var mod = new ScriptModFile(sj, this, file -> new ModFileInfo((ModFile) file, conf, List.of()), modId, modId);
+        var mod = new ScriptModFile(sj, this, file -> infoParser.apply(file, modId), modId, modId);
 
         mjm.setModFile(mod);
         return new ModFileOrException(mod, null);
