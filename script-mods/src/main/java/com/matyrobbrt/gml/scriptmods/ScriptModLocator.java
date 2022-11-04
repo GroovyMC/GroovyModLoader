@@ -5,6 +5,10 @@
 
 package com.matyrobbrt.gml.scriptmods;
 
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.file.CommentedFileConfig;
+import com.electronwill.nightconfig.core.file.FileNotFoundAction;
+import com.google.common.base.Suppliers;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Feature;
 import com.google.common.jimfs.Jimfs;
@@ -38,6 +42,7 @@ import java.security.CodeSigner;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
@@ -235,7 +240,28 @@ public class ScriptModLocator implements IModLocator {
     }
 
     public List<Path> getScanDirs() {
-        return List.of(FMLPaths.GAMEDIR.get().resolve("mods/scripts"));
+        return SCAN_DIRS_CONFIG.get().stream().map(FMLPaths.GAMEDIR.get()::resolve).map(Path::toAbsolutePath).toList();
+    }
+
+    private static final Supplier<List<String>> SCAN_DIRS_CONFIG = Suppliers.memoize(() -> getScanDirsFromConfig(FMLPaths.CONFIGDIR.get().resolve("gml-script-mods.toml")));
+
+    private static List<String> getScanDirsFromConfig(Path configPath) {
+        try (final var configData = CommentedFileConfig.builder(configPath)
+                .onFileNotFound((file, configFormat) -> {
+                    Files.write(file, List.of(
+                            "# The folders (relative to the base game directory) Groovy script mods should be read from.",
+                            "folders = [\"mods/scripts\"]"
+                    ));
+                    return true;
+                })
+                .build()) {
+            configData.load();
+
+            return configData.getOrElse("folders", List.of("mods/scripts"));
+        } catch (Exception exception) {
+            LOGGER.error("Failed to load script mods config file from {}: ", configPath, exception);
+        }
+        return List.of("mods/scripts");
     }
 
     @FunctionalInterface
