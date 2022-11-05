@@ -49,40 +49,53 @@ class ModsDotGroovyCompiler {
                 throw new ClassNotFoundException(name)
             }
         }
-        final shell = new GroovyShell(parentLoader, new Binding(), createConfiguration())
+        final shell = new GroovyShell(parentLoader, new Binding(), new CompilerConfiguration())
         shell.evaluate("ModsDotGroovy.setPlatform('forge')")
         return shell
     }()
 
-    private static CompilerConfiguration createConfiguration() {
-        return new CompilerConfiguration()
-            .addCompilationCustomizers(new ImportCustomizer()
-                .addStaticImport('ModsDotGroovy', 'make'))
+    static IConfigurable compileMDG(final String modId, final String script) {
+        final Map parsedMap = shell.evaluate(script)['data'] as Map
+
+        // add groovyscript-specific defaults manually for now
+        // todo: remove this once a "Runtime ModsDotGroovy" PR is submitted and used here
+
+        // if the mods.groovy is missing modLoader and loaderVersion, assume it'll work on this loader
+        parsedMap.putIfAbsent('modLoader', 'gml')
+        parsedMap.putIfAbsent('loaderVersion', '[1,)')
+
+        (((List) parsedMap.get('mods'))[0] as Map).putIfAbsent('credits', 'Powered by GroovyScript')
+
+        // add the groovyscript = true property if absent
+        parsedMap.putIfAbsent('properties', [:])
+        ((Map) parsedMap.get('properties')).putIfAbsent('groovyscript', true)
+
+        return fromMap(parsedMap)
     }
 
-    @CompileDynamic
-    static IConfigurable compileMDG(String script) {
-        fromMap(shell.evaluate(script).data as Map)
-    }
-
-    static IConfigurable fromMap(Map map) {
+    static IConfigurable fromMap(final Map map) {
         new IConfigurable() {
             @Override
             <T> Optional<T> getConfigElement(String... key) {
-                return Optional.ofNullable((T)map[key.join('.')])
+                return Optional.ofNullable((T) map[key.join('.')])
             }
 
             @Override
             List getConfigList(String... key) {
-                return getConfigElement(key)
-                    .filter { it instanceof List }
-                    .map {
-                        ((List) it).stream()
-                            .filter { el -> el instanceof Map }
-                            .map { el -> fromMap((Map) el)}
-                            .toList()
-                    }
-                    .orElse(List.of())
+                def element = getConfigElement(key).orElse(List.of())
+                if (element instanceof Map) {
+                    return List.of(fromMap(element as Map))
+                } else if (element instanceof List) {
+                    return getConfigElement(key)
+                            .map {
+                                ((List) it).stream()
+                                        .map { el -> el instanceof Map ? fromMap((Map) el) : el }
+                                        .toList()
+                            }
+                            .orElse(List.of())
+                } else {
+                    return List.of(element)
+                }
             }
         }
     }
