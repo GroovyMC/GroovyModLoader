@@ -11,20 +11,52 @@ import net.minecraftforge.forgespi.language.IConfigurable
 import org.codehaus.groovy.control.CompilerConfiguration
 import org.codehaus.groovy.control.customizers.ImportCustomizer
 
+import java.nio.file.FileSystems
+import java.nio.file.Files
+import java.nio.file.Path
+
 @CompileStatic
-@Newify(pattern = '[A-z][A-Za-z0-9_]*')
 class ModsDotGroovyCompiler {
     @Lazy
     private static GroovyShell shell = {
-        final shell = GroovyShell(Binding(), createConfiguration())
-        ModsDotGroovyCompiler.class.getResource('/META-INF/jarjar/mdg-dsl.jar')?.tap { shell.classLoader.addURL(it) }
+        final jarPath = Path.of(ModsDotGroovyCompiler.class.getResource('/META-INF/jarjar/mdg-dsl.jar').toURI())
+        final fs = FileSystems.newFileSystem(jarPath)
+
+        final parentLoader = new ClassLoader(ModsDotGroovyCompiler.classLoader) {
+            @Override
+            protected URL findResource(String name) {
+                final path = fs.getPath(name)
+                return Files.exists(path) ? path.toUri().toURL() : null
+            }
+
+            @Override
+            protected Enumeration<URL> findResources(String name) throws IOException {
+                final res = findResource(name)
+                return res === null ? Collections.<URL>emptyEnumeration() : Collections.enumeration([findResource(name)])
+            }
+
+            @Override
+            protected Class<?> findClass(final String name) throws ClassNotFoundException {
+                final path = fs.getPath(name.replace('.', '/') + '.class')
+                if (Files.exists(path)) {
+                    try (final is = Files.newInputStream(path)) {
+                        final bytes = is.readAllBytes()
+                        return defineClass(name, bytes, 0, bytes.length)
+                    } catch (IOException e) {
+                        throw new ClassNotFoundException(name, e)
+                    }
+                }
+                throw new ClassNotFoundException(name)
+            }
+        }
+        final shell = new GroovyShell(parentLoader, new Binding(), createConfiguration())
         shell.evaluate("ModsDotGroovy.setPlatform('forge')")
         return shell
     }()
 
     private static CompilerConfiguration createConfiguration() {
-        return CompilerConfiguration()
-            .addCompilationCustomizers(ImportCustomizer()
+        return new CompilerConfiguration()
+            .addCompilationCustomizers(new ImportCustomizer()
                 .addStaticImport('ModsDotGroovy', 'make'))
     }
 
