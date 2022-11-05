@@ -3,15 +3,12 @@
  * SPDX-License-Identifier: MIT
  */
 
-package com.matyrobbrt.gml.internal
+package com.matyrobbrt.gml.internal.locator
 
 import com.matyrobbrt.gml.util.Reflections
 import com.matyrobbrt.gml.util.Reflections.MethodCaller
-import cpw.mods.modlauncher.ModuleLayerHandler
 import cpw.mods.modlauncher.api.IModuleLayerManager
 import groovy.transform.CompileStatic
-import groovy.transform.PackageScope
-import groovy.transform.PackageScopeTarget
 import net.minecraftforge.fml.loading.FMLLoader
 import net.minecraftforge.fml.loading.moddiscovery.InvalidModFileException
 import net.minecraftforge.fml.loading.moddiscovery.ModFile
@@ -26,7 +23,6 @@ import java.lang.invoke.MethodType
 import java.lang.reflect.Field
 
 @CompileStatic
-@PackageScope([PackageScopeTarget.CLASS])
 class ModLocatorInjector {
     private static boolean wasInjected
     private static final Logger log = LoggerFactory.getLogger(ModLocatorInjector.class)

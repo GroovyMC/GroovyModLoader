@@ -6,6 +6,7 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
+group = 'com.matyrobbrt.gml'
 version = project.scriptmods_version
 archivesBaseName = 'script-mods'
 

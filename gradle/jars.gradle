@@ -43,22 +43,26 @@ tasks.register('modJar', Jar) {
 }
 
 tasks.register('fullJar', JarInJarTask) { JarInJarTask task ->
-    task.from sourceSets.main.output
-    task.from sourceSets.transform.output
-    task.from sourceSets.extension.output
+    task.from(sourceSets.main.output)
+    task.from(sourceSets.transform.output)
+    task.from(sourceSets.extension.output)
     task.manifest.attributes(manifestAttr + [
             'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
     ])
-    task.archiveClassifier.set 'all'
-    task.group 'build'
+    task.archiveClassifier.set('all')
+    task.group('build')
 
     task.fromJar(tasks.named('modJar'))
     task.fromJar(tasks.named('groovyJar'))
     task.fromConfiguration(project.configurations.include) {
         nextMajorBound "io.github.groovymc.cgl:cgl-${mc_version}-forge"
     }
+
+    task.fromConfiguration(project.configurations.modsDotGroovy, {}, false)
+    task.jarJarCopySpec.rename('dsl-.+', 'mdg-dsl.jar')
+
+    tasks.build.dependsOn(task)
 }
-tasks.build.dependsOn tasks.fullJar
 project(':script-mods').afterEvaluate {
     rootProject.tasks.named('fullJar', JarInJarTask) {
         fromJar(project(':script-mods').tasks.shadowJar)

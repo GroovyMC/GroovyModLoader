@@ -1,6 +1,5 @@
 package jij
 
-
 import groovy.transform.CompileStatic
 import jij.JiJDependency.Provider
 import jij.hash.HashFunction
@@ -19,16 +18,17 @@ import org.gradle.jvm.tasks.Jar
 import java.nio.file.Files
 import java.util.function.Function
 import java.util.function.Predicate
-import java.util.function.Supplier
+import java.util.stream.Stream
 
 @CompileStatic
 abstract class JarInJarTask extends Jar {
-    private final CopySpec jarJarCopySpec
+    public final CopySpec jarJarCopySpec
     protected final ConfigurableFileCollection metadata = getProject().files({
         project.files(writeMetadata(new File(project.buildDir, "$name/metadata.json")))
     })
 
     protected final List<Provider> providers = []
+    protected final List<Provider> providersWithoutMetadata = []
     protected final Map<String, ArtifactTransformer> transformers = new HashMap<>()
     protected Function<String, ArtifactTransformer> transformerFunction = { null }
 
@@ -72,8 +72,9 @@ abstract class JarInJarTask extends Jar {
     void fromConfiguration(Configuration configuration, @DelegatesTo(
             value = JiJDependency.ConfigurationDependencyProvider,
             strategy = Closure.DELEGATE_FIRST
-    ) Closure configurator = {}) {
-        final prov = provider(new JiJDependency.ConfigurationDependencyProvider(project, [configuration]))
+    ) Closure configurator = {}, boolean withMetadata = true) {
+        final prov = new JiJDependency.ConfigurationDependencyProvider(project, [configuration])
+        withMetadata ? provider(prov) : providerWithoutMetadata(prov)
         configurator.delegate = prov
         configurator.resolveStrategy = Closure.DELEGATE_FIRST
         configurator(prov)
@@ -81,6 +82,11 @@ abstract class JarInJarTask extends Jar {
 
     <T extends Provider> T provider(T provider) {
         providers.add(provider)
+        return provider
+    }
+
+    <T extends Provider> T providerWithoutMetadata(T provider) {
+        providersWithoutMetadata.add(provider)
         return provider
     }
 
@@ -97,7 +103,9 @@ abstract class JarInJarTask extends Jar {
     @InputFiles
     FileCollection getIncludedFiles() {
         if (this.@includedFiles === null) {
-            return this.@includedFiles = project.files(providers.stream().flatMap { it.resolve().stream() }
+            return this.@includedFiles = project.files(Stream.concat(
+                    providers.stream(), providersWithoutMetadata.stream()
+            ).flatMap { it.resolve().stream() }
                     .filter(distinct())
                     .map { getFileAndTransform(it) }
                     .sorted()

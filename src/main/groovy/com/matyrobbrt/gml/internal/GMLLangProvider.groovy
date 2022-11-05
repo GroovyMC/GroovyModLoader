@@ -6,6 +6,7 @@
 package com.matyrobbrt.gml.internal
 
 import com.matyrobbrt.gml.GMod
+import com.matyrobbrt.gml.internal.locator.ModLocatorInjector
 import com.matyrobbrt.gml.mappings.MappingsProvider
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
