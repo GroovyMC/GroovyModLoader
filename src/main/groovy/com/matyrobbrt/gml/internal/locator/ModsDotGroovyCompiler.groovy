@@ -82,7 +82,7 @@ class ModsDotGroovyCompiler {
 
             @Override
             List getConfigList(String... key) {
-                def element = getConfigElement(key).orElse(List.of())
+                final element = getConfigElement(key).orElse(List.of())
                 if (element instanceof Map) {
                     return List.of(fromMap(element as Map))
                 } else if (element instanceof List) {
