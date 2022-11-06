@@ -47,21 +47,7 @@ class ModLocatorInjector {
             configurable = ModsDotGroovyCompiler.compileMDG(modId, Files.readString(modsDotGroovyPath))
         } else {
             // couldn't find one, so let's set a reasonable fallback
-            configurable = ModsDotGroovyCompiler.fromMap(
-                modLoader: 'gml',
-                loaderVersion: '[1,)',
-                license: 'All rights reserved',
-                mods: [
-                        modId: modId,
-                        version: '1.0.0',
-                        displayName: "${modId}.groovy".toString(),
-                        credits: 'Powered by GroovyScript'
-                        // todo: link to documentation for setting up mods.groovy in your script if missing
-                ],
-                properties: [
-                        groovyscript: true
-                ]
-            )
+            configurable = ModsDotGroovyCompiler.getDefaultConfig(modId)
         }
 
         return configurable
