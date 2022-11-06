@@ -5,6 +5,7 @@
 
 package com.matyrobbrt.gml.internal;
 
+import com.matyrobbrt.gml.GMod;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import groovy.lang.GroovyClassLoader;
@@ -14,6 +15,8 @@ import net.minecraftforge.fml.loading.moddiscovery.ModClassVisitor;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.forgespi.language.ModFileScanData;
 import net.minecraftforge.forgespi.locating.IModFile;
+import org.codehaus.groovy.ast.ClassHelper;
+import org.codehaus.groovy.ast.tools.GeneralUtils;
 import org.codehaus.groovy.control.BytecodeProcessor;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
@@ -90,24 +93,28 @@ public final class ScriptFileCompiler {
     }
 
     private void compileClasses(final List<Path> paths) throws IOException {
-        CompilationUnit unit = createCompilationUnit();
+        CompilationUnit unit = createCompilationUnit(paths.size() > 1);
         paths.forEach(LamdbaExceptionUtils.rethrowConsumer(path -> unit.addSource(path.getFileName().toString().replace(".groovy", ""),
                 Files.readString(path))));
 
         CompilationUnit.ClassgenCallback collector = createCollector(unit);
         unit.setClassgenCallback(collector);
         unit.compile(Phases.CONVERSION);
+        unit.compile(Phases.SEMANTIC_ANALYSIS);
+        for (final org.codehaus.groovy.ast.ClassNode classNode : unit.getAST().getClasses()) {
+            // add the @GMod(modId) annotation to the main class
+            if (classNode.getNameWithoutPackage().equals("Main")) {
+                final var modAnnotation = new org.codehaus.groovy.ast.AnnotationNode(ClassHelper.make(GMod.class));
+                modAnnotation.setMember("value", GeneralUtils.constX(modId));
+                classNode.addAnnotation(modAnnotation);
+            }
+        }
         unit.compile(Phases.CLASS_GENERATION);
         paths.forEach(LamdbaExceptionUtils.rethrowConsumer(Files::delete));
     }
 
     private CompilationUnit.ClassgenCallback createCollector(CompilationUnit unit) {
         return (classVisitor, classNode) -> {
-            if (classNode.getNameWithoutPackage().equalsIgnoreCase("main")) {
-                final var annotation = classVisitor.visitAnnotation("Lcom/matyrobbrt/gml/GMod;", true);
-                annotation.visit("value", modId);
-                annotation.visitEnd();
-            }
             byte[] data = ((ClassWriter) classVisitor).toByteArray();
             BytecodeProcessor bytecodePostprocessor = unit.getConfiguration().getBytecodePostprocessor();
             if (bytecodePostprocessor != null) {
@@ -125,12 +132,12 @@ public final class ScriptFileCompiler {
     }
 
     @SuppressWarnings("removal")
-    private CompilationUnit createCompilationUnit() {
+    private CompilationUnit createCompilationUnit(final boolean useParallelParsing) {
         final var compilerConfig = new CompilerConfiguration()
                 .addCompilationCustomizers(setupImports(new ImportCustomizer()));
 
         compilerConfig.setOptimizationOptions(Map.of(
-                CompilerConfiguration.PARALLEL_PARSE, false,
+                CompilerConfiguration.PARALLEL_PARSE, useParallelParsing,
                 CompilerConfiguration.GROOVYDOC, true,
                 CompilerConfiguration.RUNTIME_GROOVYDOC, true
         ));
@@ -186,6 +193,6 @@ public final class ScriptFileCompiler {
     }
 
     public static boolean isScriptMod(IModFile file) {
-        return (boolean)file.getModFileInfo().getFileProperties().getOrDefault("groovyscript", false);
+        return (boolean) file.getModFileInfo().getFileProperties().getOrDefault("groovyscript", false);
     }
 }
