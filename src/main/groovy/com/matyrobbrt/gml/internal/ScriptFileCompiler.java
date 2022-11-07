@@ -96,7 +96,12 @@ public final class ScriptFileCompiler {
 
         CompilationUnit.ClassgenCallback collector = createCollector(unit);
         unit.setClassgenCallback(collector);
-        unit.compile(Phases.CONVERSION);
+        unit.compile(Phases.SEMANTIC_ANALYSIS);
+        // Set the package name for the classes if not explicitly defined
+        unit.getAST().getClasses().forEach(classNode -> {
+            if (!classNode.hasPackageName())
+                classNode.setName(rootPackage + "." + classNode.getName());
+        });
         unit.compile(Phases.CLASS_GENERATION);
         paths.forEach(LamdbaExceptionUtils.rethrowConsumer(Files::delete));
     }
