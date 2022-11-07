@@ -7,7 +7,7 @@ ModsDotGroovy.make {
 
     mod {
         modId = 'gml'
-        author = 'Matyrobbrt'
+        authors = ['Matyrobbrt', 'Paint_Ninja']
         displayName = 'GroovyModLoader'
         version = this.version
         description = 'A mod loader for Groovy mods'
