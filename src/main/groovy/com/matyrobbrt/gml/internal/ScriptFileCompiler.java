@@ -8,6 +8,7 @@ package com.matyrobbrt.gml.internal;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import groovy.lang.GroovyClassLoader;
+import groovy.util.logging.Slf4j;
 import groovyjarjarasm.asm.ClassWriter;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.moddiscovery.ModClassVisitor;
@@ -18,6 +19,7 @@ import org.codehaus.groovy.control.BytecodeProcessor;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
+import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Label;
@@ -127,7 +129,10 @@ public final class ScriptFileCompiler {
     @SuppressWarnings("removal")
     private CompilationUnit createCompilationUnit() {
         final var compilerConfig = new CompilerConfiguration()
-                .addCompilationCustomizers(setupImports(new ImportCustomizer()));
+                .addCompilationCustomizers(
+                        setupImports(new ImportCustomizer()),
+                        new ASTTransformationCustomizer(Map.of("category", modId), Slf4j.class)
+                );
 
         compilerConfig.setOptimizationOptions(Map.of(
                 CompilerConfiguration.PARALLEL_PARSE, false,
