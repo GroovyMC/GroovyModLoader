@@ -98,13 +98,9 @@ class ModsDotGroovyCompiler {
                 if (element instanceof Map) {
                     return List.of(fromMap(element as Map))
                 } else if (element instanceof List) {
-                    return getConfigElement(key)
-                            .map {
-                                ((List) it).stream()
-                                        .map { el -> el instanceof Map ? fromMap((Map) el) : el }
-                                        .toList()
-                            }
-                            .orElse(List.of())
+                    return element.stream()
+                            .map { el -> el instanceof Map ? fromMap((Map) el) : el }
+                            .toList()
                 } else {
                     return List.of(element)
                 }
