@@ -33,7 +33,7 @@ as `loaderVersion`.
 
 The main mod class should have a no-arg constructor and be annotated with `@GMod` with the mod ID specified. Access to the mod and Forge
 buses is provided respectively through the `modBus` or `forgeBus` properties.
-If you want `@CompileStatic` support for those properties, consider implementing `BaseGMod` in your mod main class.
+If you want IDE support alongside `@CompileStatic` for those properties, consider implementing `BaseGMod` in your mod main class or install the EnhancedGroovy plugin for IntelliJ.
 
 ```groovy
 @GMod('examplemod')
@@ -51,7 +51,7 @@ class ExampleMod implements BaseGMod {
 
 ## Groovy Version
 
-The Groovy version provided by GML is: **4.0.5**.  
+The Groovy version provided by GML is: **4.0.6**.  
 The specific Groovy version a GML version provides can be found in the `META-INF/MANIFEST.MF` file in the jar, the `BundledGroovyVersion` property.
 
 Only releases will be supported by GML, not release candidates.
