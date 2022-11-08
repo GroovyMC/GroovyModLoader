@@ -69,6 +69,15 @@ project(':script-mods').afterEvaluate {
     }
 }
 
+tasks.register('jijtestJar', JarInJarTask) { JarInJarTask task ->
+    task.archiveBaseName.set('jijtest')
+    task.fromJar(tasks.named('fullJar'))
+    task.manifest.attributes([
+            'Implementation-Version': project.version,
+            'Automatic-Module-Name': 'com.matyrobbrt.gml.jijtest'
+    ])
+}
+
 tasks.named('jar', Jar).configure { Jar it ->
     it.from sourceSets.extension.output
     it.manifest.attributes(manifestAttr + [

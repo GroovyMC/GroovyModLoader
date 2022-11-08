@@ -3,6 +3,9 @@ minecraft {
     runs {
         client {}
         server {}
+        jijtest {
+            parent runs.client
+        }
     }
 }
 
@@ -10,9 +13,16 @@ dependencies {
     runtimeOnly files(
             tasks.fullJar.archiveFile.get().asFile
     )
+    if ('runJijtest' in gradle.startParameter.taskNames)
+        runtimeOnly files(
+            tasks.jijtestJar.archiveFile.get().asFile
+        )
 }
 tasks.whenTaskAdded {
     if (it.name == 'runClient' || it.name == 'runServer') {
         it.dependsOn(':fullJar')
+    }
+    if (it.name == 'runJijtest') {
+        it.dependsOn(':jijtestJar')
     }
 }
