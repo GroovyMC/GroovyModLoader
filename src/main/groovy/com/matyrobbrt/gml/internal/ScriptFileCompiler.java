@@ -60,11 +60,14 @@ public final class ScriptFileCompiler {
         LOGGER.info("Compiling script mod {}", modId);
 
         try (final Stream<Path> stream = Files.walk(fs.getPath("scripts"))
-                .filter(it -> it.toString().endsWith(".groovy"))) {
+                .filter(it -> {
+                    final String fileName = it.toString();
+                    return fileName.endsWith(".groovy") && !fileName.equals("mods.groovy");
+                })) {
             // Compile the classes
             compileClasses(stream.toList());
 
-            Path mainClassPath = fs.getPath(rootPackage, "Main.class");
+            final Path mainClassPath = fs.getPath(rootPackage, "Main.class");
             // And if we don't have a main class, generate it
             if (!Files.exists(mainClassPath) && !Files.exists(fs.getPath(rootPackage, "main.class"))) {
                 // If the main class doesn't exist, create it
@@ -79,8 +82,8 @@ public final class ScriptFileCompiler {
 
         modFile.scanFile((Path path) -> {
             try (final InputStream inStream = Files.newInputStream(path)) {
-                ModClassVisitor mcv = new ModClassVisitor();
-                ClassReader cr = new ClassReader(inStream);
+                final ModClassVisitor mcv = new ModClassVisitor();
+                final ClassReader cr = new ClassReader(inStream);
                 cr.accept(mcv, 0);
                 mcv.buildData(scanData.getClasses(), scanData.getAnnotations());
             } catch (final IOException | IllegalArgumentException ignored) {
@@ -90,7 +93,7 @@ public final class ScriptFileCompiler {
     }
 
     private void compileClasses(final List<Path> paths) throws IOException {
-        CompilationUnit unit = createCompilationUnit();
+        final CompilationUnit unit = createCompilationUnit();
         paths.forEach(LamdbaExceptionUtils.rethrowConsumer(path -> unit.addSource(path.getFileName().toString().replace(".groovy", ""),
                 Files.readString(path))));
 
@@ -113,7 +116,7 @@ public final class ScriptFileCompiler {
             if (bytecodePostprocessor != null) {
                 data = bytecodePostprocessor.processBytecode(classNode.getName(), data);
             }
-            Path path = fs.getPath(classNode.getName().replace('.', '/') + ".class");
+            final Path path = fs.getPath(classNode.getName().replace('.', '/') + ".class");
             try {
                 if (path.getParent() != null) Files.createDirectories(path.getParent());
                 Files.write(path, data);
