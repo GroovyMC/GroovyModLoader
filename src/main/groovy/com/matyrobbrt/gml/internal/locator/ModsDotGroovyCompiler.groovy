@@ -5,11 +5,9 @@
 
 package com.matyrobbrt.gml.internal.locator
 
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import net.minecraftforge.forgespi.language.IConfigurable
 import org.codehaus.groovy.control.CompilerConfiguration
-import org.codehaus.groovy.control.customizers.ImportCustomizer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -63,9 +61,8 @@ class ModsDotGroovyCompiler {
         try {
             parsedMap = shell.evaluate(script)['data'] as Map
         } catch (final Exception e) {
-            log.warn "Failed to parse mods.groovy for script $modId: ${e.message}"
-            e.printStackTrace()
-            log.warn "Falling back to default metadata for $modId"
+            log.error("Failed to parse mods.groovy for script {}", modId, e)
+            log.warn('Falling back to default metadata for {}', modId)
             return getDefaultConfig(modId)
         }
 
@@ -94,7 +91,7 @@ class ModsDotGroovyCompiler {
 
             @Override
             List getConfigList(final String... key) {
-                final def element = getConfigElement(key).orElse(List.of())
+                final element = getConfigElement(key).orElse(List.of())
                 if (element instanceof Map) {
                     return List.of(fromMap(element as Map))
                 } else if (element instanceof List) {
