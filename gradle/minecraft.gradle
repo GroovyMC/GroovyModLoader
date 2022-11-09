@@ -10,13 +10,15 @@ minecraft {
 }
 
 dependencies {
-    runtimeOnly files(
-            tasks.fullJar.archiveFile.get().asFile
-    )
-    if ('runJijtest' in gradle.startParameter.taskNames)
+    if ('runJijtest' in gradle.startParameter.taskNames) {
         runtimeOnly files(
-            tasks.jijtestJar.archiveFile.get().asFile
+                tasks.jijtestJar.archiveFile.get().asFile
         )
+    } else {
+        runtimeOnly files(
+                tasks.fullJar.archiveFile.get().asFile
+        )
+    }
 }
 tasks.whenTaskAdded {
     if (it.name == 'runClient' || it.name == 'runServer') {

@@ -1,0 +1,57 @@
+{
+  // Package "star" imports
+  packages: [
+    // GML stuff
+    [
+      "com.matyrobbrt.gml",
+      "com.matyrobbrt.gml.bus",
+      "com.matyrobbrt.gml.bus.type"
+    ],
+
+    // Lifecycle events
+    "net.minecraftforge.fml.event.lifecycle",
+
+    // EventBus API
+    "net.minecraftforge.eventbus.api",
+
+    // Chat message components
+    "net.minecraft.network.chat",
+
+    // Add some 'common' MC events
+    [
+      "net.minecraftforge.event",
+
+      // Entity events
+      [
+        "net.minecraftforge.event.entity",
+        "net.minecraftforge.event.entity.item",
+        "net.minecraftforge.event.entity.living",
+        "net.minecraftforge.event.entity.player"
+      ],
+
+      "net.minecraftforge.event.level",
+      "net.minecraftforge.event.server"
+    ]
+  ],
+
+  // Class imports
+  classes: [
+    // GML Stuff
+    "com.matyrobbrt.gml.bus.EventBusSubscriber as EBS",
+
+    // Lifecycle events, aliased for ease of usage
+    [
+      "net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent as ClientSetupEvent",
+      "net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent as CommonSetupEvent",
+    ],
+
+    // Groovy stuff
+    "groovy.transform.CompileStatic" // TODO - maybe package-import groovy.transform.*?
+  ],
+
+  // Static method / field imports
+  statics: [
+    // Temporary getLogger method
+    "com.mojang.logging.LogUtils#getLogger"
+  ]
+}

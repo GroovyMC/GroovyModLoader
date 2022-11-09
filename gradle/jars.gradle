@@ -74,7 +74,8 @@ tasks.register('jijtestJar', JarInJarTask) { JarInJarTask task ->
     task.fromJar(tasks.named('fullJar'))
     task.manifest.attributes([
             'Implementation-Version': project.version,
-            'Automatic-Module-Name': 'com.matyrobbrt.gml.jijtest'
+            'Automatic-Module-Name': 'com.matyrobbrt.gml.jijtest',
+            'FMLModType': 'LANGPROVIDER'
     ])
 }
 
