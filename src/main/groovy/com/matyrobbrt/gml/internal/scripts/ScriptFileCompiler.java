@@ -95,7 +95,7 @@ public final class ScriptFileCompiler {
                 return imports;
             }
         } catch (IOException e) {
-            LOGGER.error("Encountered exception adding script compilation imports: ", e);
+            LOGGER.error("Encountered exception reading script compilation imports: ", e);
         }
 
         return List.of();
@@ -239,5 +239,4 @@ public final class ScriptFileCompiler {
     public static boolean isScriptMod(IModFile file) {
         return (boolean)file.getModFileInfo().getFileProperties().getOrDefault("groovyscript", false);
     }
-
 }
