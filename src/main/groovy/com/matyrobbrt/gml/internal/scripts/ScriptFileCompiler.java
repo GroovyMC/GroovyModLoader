@@ -59,7 +59,7 @@ public final class ScriptFileCompiler {
                 if (array == null) return;
                 array.forEach(it -> {
                     if (it.isJsonArray()) readNested(it.getAsJsonArray(), consumer);
-                    else consumer.accept(it);
+                    else if (!it.isJsonNull()) consumer.accept(it);
                 });
             }
 

@@ -1,3 +1,8 @@
+import com.matyrobbrt.gml.buildscript.JarInJarTask
+import com.matyrobbrt.gml.buildscript.JiJPlugin
+import com.matyrobbrt.gml.buildscript.transform.JiJDependencyFixerTransformer
+import com.matyrobbrt.gml.buildscript.util.JiJUtils
+
 plugins {
     id 'groovy'
     id 'maven-publish'
@@ -19,6 +24,8 @@ project.ext.groovyLibs = [
 
         'toml', 'json'
 ]
+
+new JiJPlugin().apply(project)
 
 apply from: 'gradle/projectSetup.gradle'
 apply from: 'gradle/mdg.gradle'
@@ -49,6 +56,21 @@ repositories {
     maven { url = 'https://maven.moddinginquisition.org/releases' }
 }
 
+jij.onConfiguration('groovy') {
+    final manifestFix = new JiJDependencyFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
+    eachMatching('.+') {
+        versionRange nextMajor
+        transform manifestFix
+    }
+}
+
+jij.onConfiguration('modsDotGroovy') {
+    eachMatching('.+') {
+        path = 'mdg-dsl.jar'
+        includeMetadata = false
+    }
+}
+
 dependencies {
     minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
 
@@ -64,7 +86,11 @@ dependencies {
     modCompileOnly sourceSets.main.output
 
     compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.1.0'
-    include "io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}"
+    include("io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}") {
+        jij.onDependency(it) {
+            versionRange nextMajor
+        }
+    }
 }
 
 String groovyDep(String name) {
