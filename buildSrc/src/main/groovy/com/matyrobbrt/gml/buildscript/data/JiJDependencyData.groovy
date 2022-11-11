@@ -18,7 +18,10 @@ class JiJDependencyData {
     DependencyAction<String> group = { ResolvedArtifact artifact, ModuleDependency dependency -> artifact.moduleVersion.id.group }
     DependencyAction<String> artifactId = { ResolvedArtifact artifact, ModuleDependency dependency -> artifact.moduleVersion.id.name }
     DependencyAction<String> version = { ResolvedArtifact artifact, ModuleDependency dependency -> artifact.moduleVersion.id.version }
-    DependencyAction<String> versionRange = { ResolvedArtifact artifact, ModuleDependency dependency -> "[${getVersionAsString(artifact, dependency)},)" }
+    DependencyAction<String> versionRange = { ResolvedArtifact artifact, ModuleDependency dependency ->
+        if (dependency !== null && DependencyUtils.isValidVersionRange(dependency.version)) return dependency.version
+        return "[${getVersionAsString(artifact, dependency)},)"
+    }
     boolean includeMetadata = true
     DependencyAction<String> path = { ResolvedArtifact artifact, ModuleDependency dependency -> artifact.file.name }
     boolean obfuscated
