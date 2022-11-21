@@ -28,12 +28,12 @@ plugins {
     id 'groovy'
 }
 ```
-In your `mods.toml` / `mods.groovy`, specify `gml` as the loader and the version of the software
+In your `mods.toml` / [mods.groovy](https://github.com/GroovyMC/ModsDotGroovy), specify `gml` as the loader and the version of the software
 as `loaderVersion`.
 
 The main mod class should have a no-arg constructor and be annotated with `@GMod` with the mod ID specified. Access to the mod and Forge
 buses is provided respectively through the `modBus` or `forgeBus` properties.
-If you want IDE support alongside `@CompileStatic` for those properties, consider implementing `BaseGMod` in your mod main class or install the EnhancedGroovy plugin for IntelliJ.
+If you want IDE support alongside `@CompileStatic` for those properties, consider implementing `BaseGMod` in your mod main class or install the [EnhancedGroovy plugin for IntelliJ](https://plugins.jetbrains.com/plugin/19844-enhancedgroovy).
 
 ```groovy
 @GMod('examplemod')
@@ -50,12 +50,12 @@ class ExampleMod implements BaseGMod {
 ```
 
 ## Groovy Version
-
-The Groovy version provided by GML is: **4.0.6**.  
-The specific Groovy version a GML version provides can be found in the `META-INF/MANIFEST.MF` file in the jar, the `BundledGroovyVersion` property.
+The Groovy version provided by the latest version of GML is currently: **4.0.6**.  
+To find out what Groovy version a built GML jar provides, you can read the `BundledGroovyVersion` property in the `META-INF/MANIFEST.MF`.
 
 Only releases will be supported by GML, not release candidates.
 Once a Forge version has a Recommended Build published, the Groovy major and minor versions will be locked for that Minecraft version. However, patch versions will still be updated.
+
 ### Groovy modules
 The Groovy modules provided by GML are: stdlib, contracts, datetime, nio, macro, macro-library, templates, typecheckers, dateutil, ginq, toml, json.  
 You may however include a Groovy module that is **not** provided by GML using [JiJ](https://forge.gemwire.uk/wiki/Jar-in-Jar).  
