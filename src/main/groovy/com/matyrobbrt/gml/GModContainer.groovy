@@ -9,7 +9,7 @@ import com.matyrobbrt.gml.bus.EventBusSubscriber
 import com.matyrobbrt.gml.bus.GModEventBus
 import com.matyrobbrt.gml.bus.type.ForgeBus
 import com.matyrobbrt.gml.bus.type.ModBus
-import com.matyrobbrt.gml.internal.ScriptFileCompiler
+import com.matyrobbrt.gml.internal.scripts.ScriptFileCompiler
 import com.matyrobbrt.gml.util.Environment
 import com.matyrobbrt.gml.util.Reflections
 import groovy.transform.CompileDynamic

@@ -3,8 +3,14 @@
  * SPDX-License-Identifier: MIT
  */
 
-package com.matyrobbrt.gml.internal;
+package com.matyrobbrt.gml.internal.scripts;
 
+import com.google.common.base.Suppliers;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import cpw.mods.modlauncher.api.LamdbaExceptionUtils;
 import groovy.lang.GroovyClassLoader;
@@ -21,6 +27,7 @@ import org.codehaus.groovy.control.CompilerConfiguration;
 import org.codehaus.groovy.control.Phases;
 import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
+import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -30,26 +37,78 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.objectweb.asm.Opcodes.*;
 
 public final class ScriptFileCompiler {
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final Gson GSON = new GsonBuilder().setLenient().create();
+    private static final Supplier<List<GImport>> IMPORTS = Suppliers.memoize(() -> {
+        final class Helper {
+            private static void readNested(@Nullable JsonArray array, Consumer<JsonElement> consumer) {
+                if (array == null) return;
+                array.forEach(it -> {
+                    if (it.isJsonArray()) readNested(it.getAsJsonArray(), consumer);
+                    else if (!it.isJsonNull()) consumer.accept(it);
+                });
+            }
+
+            @Nullable
+            @SuppressWarnings("SameParameterValue")
+            private static <T> T atIndexOrNull(T[] values, int index) {
+                if (index >= values.length) return null;
+                return values[index];
+            }
+        }
+
+        try (final var is = ScriptFileCompiler.class.getResourceAsStream("/script_imports.json5")) {
+            if (is != null) {
+                final List<GImport> imports = new ArrayList<>();
+
+                final var json = GSON.fromJson(new InputStreamReader(is), JsonObject.class);
+
+                final List<String> packages = new ArrayList<>();
+                Helper.readNested(json.getAsJsonArray("packages"), it -> packages.add(it.getAsString()));
+                imports.add(new PackageImport(packages.toArray(String[]::new)));
+
+                Helper.readNested(json.getAsJsonArray("classes"), it -> {
+                    final String[] split = it.getAsString().split(" as ");
+                    imports.add(new ClassImport(split[0], Helper.atIndexOrNull(split, 1)));
+                });
+
+                Helper.readNested(json.getAsJsonArray("statics"), it -> {
+                    final String[] methodSplit = it.getAsString().split("#");
+                    final String[] aliasSplit = methodSplit[1].split(" as ");
+                    imports.add(new StaticImport(methodSplit[0], aliasSplit[0], Helper.atIndexOrNull(aliasSplit, 1)));
+                });
+
+                return imports;
+            }
+        } catch (IOException e) {
+            LOGGER.error("Encountered exception reading script compilation imports: ", e);
+        }
+
+        return List.of();
+    });
 
     private final FileSystem fs;
     private final String modId, rootPackage;
     private final AtomicBoolean wasCompiled;
     private final ModFile modFile;
 
-    ScriptFileCompiler(FileSystem fs, String modId, String rootPackage, AtomicBoolean wasCompiled, ModFile modFile) {
+    public ScriptFileCompiler(FileSystem fs, String modId, String rootPackage, AtomicBoolean wasCompiled, ModFile modFile) {
         this.fs = fs;
         this.modId = modId;
         this.rootPackage = rootPackage;
@@ -57,16 +116,19 @@ public final class ScriptFileCompiler {
         this.modFile = modFile;
     }
 
-    void compile(ModFileScanData scanData) {
+    public void compile(ModFileScanData scanData) {
         if (wasCompiled.get()) return; wasCompiled.set(true);
         LOGGER.info("Compiling script mod {}", modId);
 
         try (final Stream<Path> stream = Files.walk(fs.getPath("scripts"))
-                .filter(it -> it.toString().endsWith(".groovy"))) {
+                .filter(it -> {
+                    final String fileName = it.toString();
+                    return fileName.endsWith(".groovy") && !fileName.equals("mods.groovy");
+                })) {
             // Compile the classes
             compileClasses(stream.toList());
 
-            Path mainClassPath = fs.getPath(rootPackage, "Main.class");
+            final Path mainClassPath = fs.getPath(rootPackage, "Main.class");
             // And if we don't have a main class, generate it
             if (!Files.exists(mainClassPath) && !Files.exists(fs.getPath(rootPackage, "main.class"))) {
                 // If the main class doesn't exist, create it
@@ -81,8 +143,8 @@ public final class ScriptFileCompiler {
 
         modFile.scanFile((Path path) -> {
             try (final InputStream inStream = Files.newInputStream(path)) {
-                ModClassVisitor mcv = new ModClassVisitor();
-                ClassReader cr = new ClassReader(inStream);
+                final ModClassVisitor mcv = new ModClassVisitor();
+                final ClassReader cr = new ClassReader(inStream);
                 cr.accept(mcv, 0);
                 mcv.buildData(scanData.getClasses(), scanData.getAnnotations());
             } catch (final IOException | IllegalArgumentException ignored) {
@@ -92,7 +154,7 @@ public final class ScriptFileCompiler {
     }
 
     private void compileClasses(final List<Path> paths) throws IOException {
-        CompilationUnit unit = createCompilationUnit();
+        final CompilationUnit unit = createCompilationUnit();
         paths.forEach(LamdbaExceptionUtils.rethrowConsumer(path -> unit.addSource(path.getFileName().toString().replace(".groovy", ""),
                 Files.readString(path))));
 
@@ -115,7 +177,7 @@ public final class ScriptFileCompiler {
             if (bytecodePostprocessor != null) {
                 data = bytecodePostprocessor.processBytecode(classNode.getName(), data);
             }
-            Path path = fs.getPath(classNode.getName().replace('.', '/') + ".class");
+            final Path path = fs.getPath(classNode.getName().replace('.', '/') + ".class");
             try {
                 if (path.getParent() != null) Files.createDirectories(path.getParent());
                 Files.write(path, data);
@@ -147,19 +209,8 @@ public final class ScriptFileCompiler {
     }
 
     private ImportCustomizer setupImports(ImportCustomizer customizer) {
-        return customizer
-                .addStarImports(
-                        // GML stuff
-                        "com.matyrobbrt.gml", "com.matyrobbrt.gml.bus", "com.matyrobbrt.gml.bus.type",
-                        // Lifecycle events and eventbus API
-                        "net.minecraftforge.eventbus.api", "net.minecraftforge.fml.event.lifecycle", "net.minecraft.network.chat",
-                        // Add some mc events
-                        "net.minecraftforge.event", "net.minecraftforge.event.entity", "net.minecraftforge.event.entity.living", "net.minecraftforge.event.entity.item", "net.minecraftforge.event.entity.player", "net.minecraftforge.event.level", "net.minecraftforge.event.server")
-                .addImport("CommonSetupEvent", "net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent")
-                .addImport("ClientSetupEvent", "net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent")
-                .addImport("EBS", "com.matyrobbrt.gml.bus.EventBusSubscriber")
-                .addImports("groovy.transform.CompileStatic")
-                .addStaticImport("com.mojang.logging.LogUtils", "getLogger");
+        IMPORTS.get().forEach(it -> it.add(customizer));
+        return customizer;
     }
 
     private ClassNode generateMainClass() {

@@ -1,4 +1,4 @@
-package jij.hash;
+package com.matyrobbrt.gml.buildscript.util;
 
 import java.io.File;
 import java.io.IOException;
