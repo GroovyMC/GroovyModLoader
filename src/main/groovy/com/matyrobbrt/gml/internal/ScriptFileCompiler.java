@@ -158,7 +158,8 @@ public final class ScriptFileCompiler {
                 .addImport("CommonSetupEvent", "net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent")
                 .addImport("ClientSetupEvent", "net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent")
                 .addImport("EBS", "com.matyrobbrt.gml.bus.EventBusSubscriber")
-                .addImports("groovy.transform.CompileStatic");
+                .addImports("groovy.transform.CompileStatic")
+                .addStaticImport("com.mojang.logging.LogUtils", "getLogger");
     }
 
     private ClassNode generateMainClass() {
