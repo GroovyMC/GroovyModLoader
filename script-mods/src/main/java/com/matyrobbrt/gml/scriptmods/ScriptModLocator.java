@@ -24,9 +24,10 @@ import net.minecraftforge.fml.loading.FileUtils;
 import net.minecraftforge.fml.loading.LogMarkers;
 import net.minecraftforge.fml.loading.moddiscovery.ModFile;
 import net.minecraftforge.fml.loading.moddiscovery.ModFileInfo;
-import net.minecraftforge.forgespi.language.IModFileInfo;
+import net.minecraftforge.forgespi.language.IConfigurable;
 import net.minecraftforge.forgespi.locating.IModFile;
 import net.minecraftforge.forgespi.locating.IModLocator;
+import org.apache.commons.lang3.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,6 @@ import java.nio.file.Path;
 import java.nio.file.spi.FileSystemProvider;
 import java.security.CodeSigner;
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
@@ -67,15 +67,15 @@ public class ScriptModLocator implements IModLocator {
         LOGGER.info("Injected Jimfs file system");
     }
 
-    private final BiFunction<IModFile, String, IModFileInfo> infoParser;
+    private final TriFunction<FileSystem, IModFile, String, IConfigurable> infoParser;
 
-    public ScriptModLocator(BiFunction<IModFile, String, IModFileInfo> infoParser) {
+    public ScriptModLocator(TriFunction<FileSystem, IModFile, String, IConfigurable> infoParser) {
         this.infoParser = infoParser;
     }
 
     @SuppressWarnings("unused")
     public ScriptModLocator() {
-        this((file, modId) -> new ModFileInfo((ModFile) file, new ConfigurableBuilder()
+        this((fs, file, modId) -> new ConfigurableBuilder()
                 .add("modLoader", "gml")
                 .add("loaderVersion", "[1,)")
                 .add("license", "All Rights Reserved")
@@ -83,7 +83,7 @@ public class ScriptModLocator implements IModLocator {
                         .add("modId", modId)
                         .add("version", "1.0.0"))
                 .add("properties", Map.of("groovyscript", true))
-                .build(), List.of()));
+                .build());
     }
 
     @Override
@@ -223,7 +223,7 @@ public class ScriptModLocator implements IModLocator {
             }
         });
 
-        var mod = new ScriptModFile(sj, this, file -> infoParser.apply(file, modId), modId, modId);
+        var mod = new ScriptModFile(sj, this, file -> new ModFileInfo((ModFile) file, infoParser.apply(fs, file, modId), List.of()), modId, modId);
 
         mjm.setModFile(mod);
         return new ModFileOrException(mod, null);

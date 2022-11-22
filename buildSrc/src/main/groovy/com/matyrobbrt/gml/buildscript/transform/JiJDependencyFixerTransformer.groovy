@@ -1,15 +1,15 @@
-package jij.transform
+package com.matyrobbrt.gml.buildscript.transform
 
+import com.matyrobbrt.gml.buildscript.data.JiJDependency
+import com.matyrobbrt.gml.buildscript.util.HashFunction
 import groovy.transform.CompileStatic
 import groovy.transform.MapConstructor
-import jij.hash.HashFunction
-import jij.JiJDependency
 
 import java.util.jar.JarFile
+import java.util.jar.JarInputStream
 import java.util.jar.JarOutputStream
 import java.util.jar.Manifest
 import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 
 @CompileStatic
 @MapConstructor
@@ -18,12 +18,12 @@ class JiJDependencyFixerTransformer implements ArtifactTransformer {
     String modulePrefix
 
     @Override
-    byte[] transform(JiJDependency dependency) {
+    byte[] transform(JiJDependency dependency, byte[] input) {
         final bytes = new ByteArrayOutputStream()
-        try (final depOs = new JarOutputStream(bytes)) {
-            final asZip = new JarFile(dependency.file())
+        try (final depOs = new JarOutputStream(bytes)
+            final inputOs = new JarInputStream(new ByteArrayInputStream(input))) {
 
-            final manifest = new Manifest(asZip.manifest)
+            final manifest = new Manifest(inputOs.manifest)
             manifest.mainAttributes.putValue('FMLModType', modType)
             // TODO do we actually want to replace the module name?
             manifest.mainAttributes.putValue('Automatic-Module-Name', (modulePrefix + '.' + dependency.group() + '.' + dependency.artifact()).replace('-', '.'))
@@ -31,10 +31,14 @@ class JiJDependencyFixerTransformer implements ArtifactTransformer {
             manifest.write(depOs)
             depOs.closeEntry()
 
-            asZip.entries().asIterator().each {
-                if (it.name == 'META-INF/MANIFEST.MF' || it.name.endsWith('module-info.class')) return
-                depOs.putNextEntry(makeNewEntry(it))
-                depOs.write(asZip.getInputStream(it).readAllBytes())
+            ZipEntry entry
+            while ((entry = inputOs.nextEntry) !== null) {
+                if (entry.name.endsWith('module-info.class')) continue
+                if (entry.name == 'META-INF/mods.toml') { // Skip mods
+                    return input
+                }
+                depOs.putNextEntry(makeNewEntry(entry))
+                depOs.write(inputOs.readAllBytes())
                 depOs.closeEntry()
             }
         }
@@ -45,15 +49,6 @@ class JiJDependencyFixerTransformer implements ArtifactTransformer {
         ZipEntry newEntry = new ZipEntry(oldEntry.name)
         if (oldEntry.getComment() !== null) newEntry.setComment(oldEntry.getComment())
         return newEntry
-    }
-
-    @Override
-    boolean shouldTransform(JiJDependency dependency) throws IOException {
-        final zipFile = new ZipFile(dependency.file())
-        // Only transform non-mods
-        boolean shouldTransform = zipFile.getEntry('META-INF/mods.toml') === null
-        zipFile.close()
-        return shouldTransform
     }
 
     @Override

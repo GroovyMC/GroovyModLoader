@@ -1,5 +1,4 @@
-import jij.JarInJarTask
-import jij.transform.JiJDependencyFixerTransformer
+import com.matyrobbrt.gml.buildscript.JarInJarTask
 
 final manifestAttr = [
         'Specification-Title': 'GroovyModLoader',
@@ -18,22 +17,11 @@ final manifestAttr = [
 tasks.register('groovyJar', JarInJarTask) { JarInJarTask task ->
     task.group('build')
     task.archiveBaseName.set('groovy-fat')
-    task.fromConfiguration(project.configurations.groovy) {
-        ['jackson-databind', 'jackson-core', 'jackson-annotations'].each {
-            nextMajorBound "com.fasterxml.jackson.core:$it"
-        }
-        nextMajorBound 'com.fasterxml.jackson.dataformat:jackson-dataformat-toml'
-        project.ext.groovyLibs.each {
-            nextMajorBound groovyId(it)
-        }
-    }
+    task.fromConfiguration(project.configurations.groovy)
     task.manifest.attributes(manifestAttr + [
             'Specification-Title': 'GML-GroovyFatJar',
             'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
     ])
-    task.transformerFunction = {
-        new JiJDependencyFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
-    }
 }
 
 tasks.register('modJar', Jar) {
@@ -52,21 +40,27 @@ tasks.register('fullJar', JarInJarTask) { JarInJarTask task ->
     task.archiveClassifier.set('all')
     task.group('build')
 
-    task.fromJar(tasks.named('modJar'))
-    task.fromJar(tasks.named('groovyJar'))
-    task.fromConfiguration(project.configurations.include) {
-        nextMajorBound "io.github.groovymc.cgl:cgl-${mc_version}-forge"
-    }
-
-    task.fromConfiguration(project.configurations.modsDotGroovy, {}, false)
-    task.jarJarCopySpec.rename('dsl-.+', 'mdg-dsl.jar')
+    task.fromJar(tasks.named('modJar')) { versionRange nextMajor }
+    task.fromJar(tasks.named('groovyJar')) { versionRange nextMajor }
+    task.fromConfiguration(project.configurations.include)
+    task.fromConfiguration(project.configurations.modsDotGroovy)
 
     tasks.build.dependsOn(task)
 }
 project(':script-mods').afterEvaluate {
     rootProject.tasks.named('fullJar', JarInJarTask) {
-        fromJar(project(':script-mods').tasks.shadowJar)
+        fromJar(project(':script-mods').tasks.shadowJar) { versionRange nextMajor }
     }
+}
+
+tasks.register('jijtestJar', JarInJarTask) { JarInJarTask task ->
+    task.archiveBaseName.set('jijtest')
+    task.fromJar(tasks.named('fullJar'))
+    task.manifest.attributes([
+            'Implementation-Version': project.version,
+            'Automatic-Module-Name': 'com.matyrobbrt.gml.jijtest',
+            'FMLModType': 'LANGPROVIDER'
+    ])
 }
 
 tasks.named('jar', Jar).configure { Jar it ->

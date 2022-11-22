@@ -1,4 +1,4 @@
-package jij
+package com.matyrobbrt.gml.buildscript.util
 
 import groovy.transform.CompileStatic
 import org.apache.maven.artifact.versioning.InvalidVersionSpecificationException
