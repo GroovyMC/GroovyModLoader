@@ -28,6 +28,10 @@ tasks.register('modJar', Jar) {
     from sourceSets.mod.output
     manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
     archiveBaseName.set('mod')
+    finalizedBy('reobfModJar')
+}
+reobf {
+    modJar {}
 }
 
 tasks.register('fullJar', JarInJarTask) { JarInJarTask task ->
