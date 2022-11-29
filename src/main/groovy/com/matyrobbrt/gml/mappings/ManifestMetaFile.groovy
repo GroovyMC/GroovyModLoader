@@ -7,13 +7,14 @@ package com.matyrobbrt.gml.mappings
 
 import com.google.gson.annotations.Expose
 import groovy.transform.CompileStatic
+import groovy.transform.stc.POJO
 
+@POJO
 @CompileStatic
 class ManifestMetaFile {
     @Expose
     List<VersionMeta> versions
 
-    @CompileStatic
     class VersionMeta {
         @Expose
         String id
