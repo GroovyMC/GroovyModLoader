@@ -17,10 +17,10 @@ class OfficialParser implements Closeable {
     final Reader reader
 
     // obf class name to map of official -> obf names
-    final Map<String, Map<String, List<String>>> methods = new LinkedHashMap<>(9000)
-    final Map<String, Map<String, String>> fields = new LinkedHashMap<>(9000)
+    final Map<String, Map<String, List<String>>> methods = new LinkedHashMap<>(8750)
+    final Map<String, Map<String, String>> fields = new LinkedHashMap<>(8750)
     // official -> obf
-    final Map<String, String> classes = new LinkedHashMap<>(9000)
+    final Map<String, String> classes = new LinkedHashMap<>(8750)
 
     private Map<String, List<String>> workingMethods
     private Map<String, String> workingFields

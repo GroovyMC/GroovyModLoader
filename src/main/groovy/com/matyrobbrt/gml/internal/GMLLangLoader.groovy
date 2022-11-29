@@ -23,10 +23,10 @@ final class GMLLangLoader implements IModLanguageProvider.IModLanguageLoader {
     @Override
     <T> T loadMod(IModInfo info, ModFileScanData modFileScanResults, ModuleLayer layer) {
         final threadLoader = Thread.currentThread().contextClassLoader
-//        if (FMLEnvironment.production) {
+        if (FMLEnvironment.production) {
             // Only load runtime mappings in production
             MappingMetaClassCreationHandle.applyCreationHandle(MappingsProvider.INSTANCE.mappingsProvider.get(), threadLoader)
-//        }
+        }
         ModExtensionLoader.setup(threadLoader)
         final gContainer = Class.forName('com.matyrobbrt.gml.GModContainer', true, threadLoader)
         final ctor = gContainer.getDeclaredConstructor(IModInfo, String, ModFileScanData, ModuleLayer)

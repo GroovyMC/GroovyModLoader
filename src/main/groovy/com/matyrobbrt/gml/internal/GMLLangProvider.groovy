@@ -31,10 +31,10 @@ final class GMLLangProvider implements IModLanguageProvider {
     private static final Type GMOD_TYPE = Type.getType(GMod)
 
     GMLLangProvider() {
-//        if (FMLEnvironment.production) {
+        if (FMLEnvironment.production) {
             // Only load mappings in prod
             MappingsProvider.INSTANCE.startMappingsSetup()
-//        }
+        }
         ModLocatorInjector.inject()
     }
 
