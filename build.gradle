@@ -106,11 +106,11 @@ dependencies {
     }
 }
 
-String groovyDep(String name) {
+String groovyDep(final String name) {
     return "${groovyId(name)}:${project.groovy_version}"
 }
 
-static String groovyId(String name) {
+static String groovyId(final String name) {
     return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}"
 }
 

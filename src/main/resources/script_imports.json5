@@ -50,8 +50,5 @@
   ],
 
   // Static method / field imports
-  statics: [
-    // Temporary getLogger method
-    "com.mojang.logging.LogUtils#getLogger"
-  ]
+  statics: []
 }
