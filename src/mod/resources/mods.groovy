@@ -7,8 +7,9 @@ ModsDotGroovy.make {
 
     mod {
         modId = 'gml'
-        author = 'Matyrobbrt'
+        authors = ['Matyrobbrt', 'Paint_Ninja']
         displayName = 'GroovyModLoader'
+        displayUrl = 'https://www.curseforge.com/minecraft/mc-mods/gml?projectId=661517'
         version = this.version
         description = 'A mod loader for Groovy mods'
         logoFile = 'gml.png'
