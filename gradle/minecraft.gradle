@@ -12,11 +12,11 @@ minecraft {
 dependencies {
     if ('runJijtest' in gradle.startParameter.taskNames) {
         runtimeOnly files(
-                tasks.jijtestJar.archiveFile.get().asFile
+                tasks.named('jijtestJar').map { it.archiveFile.get().asFile }
         )
     } else {
         runtimeOnly files(
-                tasks.fullJar.archiveFile.get().asFile
+                tasks.named('fullJar').map { it.archiveFile.get().asFile }
         )
     }
 }

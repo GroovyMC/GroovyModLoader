@@ -1,71 +1,12 @@
-import com.matyrobbrt.gml.buildscript.JarInJarTask
-
-final manifestAttr = [
-        'Specification-Title': 'GroovyModLoader',
-        'Specification-Vendor': 'GroovyMC',
-        'Specification-Version': 1,
-        'Implementation-Title': project.name,
-        'Implementation-Version': project.version,
-        'Implementation-Vendor' : 'GroovyMC',
-        'BundledGroovyVersion': project.groovy_version,
-        'GitCommit': getGitCommit(),
-        'FMLModType' : 'LANGPROVIDER',
-        'Built-on-Minecraft': project.mc_version,
-        'DownloadHomepage': 'https://www.curseforge.com/minecraft/mc-mods/gml/files'
-]
-
-tasks.register('groovyJar', JarInJarTask) { JarInJarTask task ->
-    task.group('build')
-    task.archiveBaseName.set('groovy-fat')
-    task.fromConfiguration(project.configurations.groovy)
-    task.manifest.attributes(manifestAttr + [
-            'Specification-Title': 'GML-GroovyFatJar',
-            'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
-    ])
-}
-
 tasks.register('modJar', Jar) {
     from sourceSets.mod.output
     manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
     archiveBaseName.set('mod')
 }
 
-tasks.register('fullJar', JarInJarTask) { JarInJarTask task ->
-    task.from(sourceSets.main.output)
-    task.from(sourceSets.transform.output)
-    task.from(sourceSets.extension.output)
-    task.manifest.attributes(manifestAttr + [
-            'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
-    ])
-    task.archiveClassifier.set('all')
-    task.group('build')
-
-    task.fromJar(tasks.named('modJar')) { versionRange nextMajor }
-    task.fromJar(tasks.named('groovyJar')) { versionRange nextMajor }
-    task.fromConfiguration(project.configurations.include)
-    task.fromConfiguration(project.configurations.modsDotGroovy)
-
-    tasks.build.dependsOn(task)
-}
-project(':script-mods').afterEvaluate {
-    rootProject.tasks.named('fullJar', JarInJarTask) {
-        fromJar(project(':script-mods').tasks.shadowJar) { versionRange nextMajor }
-    }
-}
-
-tasks.register('jijtestJar', JarInJarTask) { JarInJarTask task ->
-    task.archiveBaseName.set('jijtest')
-    task.fromJar(tasks.named('fullJar'))
-    task.manifest.attributes([
-            'Implementation-Version': project.version,
-            'Automatic-Module-Name': 'com.matyrobbrt.gml.jijtest',
-            'FMLModType': 'LANGPROVIDER'
-    ])
-}
-
-tasks.named('jar', Jar).configure { Jar it ->
-    it.from sourceSets.extension.output
-    it.manifest.attributes(manifestAttr + [
+tasks.named('jar', Jar).configure {
+    from sourceSets.extension.output
+    manifest.attributes(manifestAttr + [
             'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
     ])
 }
@@ -77,36 +18,36 @@ groovydoc {
     source(sourceSets.extension.allSource)
 }
 
-tasks.register('groovydocJar', Jar) { Jar it ->
-    it.classifier 'javadoc'
-    it.from groovydoc.destinationDir
-    it.dependsOn(groovydoc)
+tasks.register('groovydocJar', Jar) {
+    classifier 'javadoc'
+    from groovydoc.destinationDir
+    dependsOn(groovydoc)
 }
 
 final transformDest = new File(buildDir, 'libs/transform')
 final transformAttr = manifestAttr + [
         'Specification-Title': 'GML-Transform'
 ]
-tasks.register('transformJar', Jar) { Jar it ->
-    it.from sourceSets.transform.output
-    it.manifest.attributes(transformAttr)
-    it.archiveBaseName.set('transform')
-    it.destinationDirectory.set(transformDest)
+tasks.register('transformJar', Jar) {
+    from sourceSets.transform.output
+    manifest.attributes(transformAttr)
+    archiveBaseName.set('transform')
+    destinationDirectory.set(transformDest)
 }
 
-tasks.register('transformSources', Jar) { Jar it ->
-    it.from sourceSets.transform.allSource
-    it.manifest.attributes(transformAttr)
-    it.archiveBaseName.set('transform')
-    it.archiveClassifier.set('sources')
-    it.destinationDirectory.set(transformDest)
+tasks.register('transformSources', Jar) {
+    from sourceSets.transform.allSource
+    manifest.attributes(transformAttr)
+    archiveBaseName.set('transform')
+    archiveClassifier.set('sources')
+    destinationDirectory.set(transformDest)
 }
 
-tasks.register('testJar', Jar) { Jar it ->
-    it.group 'build'
-    it.from sourceSets.test.output
-    it.classifier 'test'
-    it.manifest.attributes([
+tasks.register('testJar', Jar) {
+    group 'build'
+    from sourceSets.test.output
+    classifier 'test'
+    manifest.attributes([
             'Specification-Title': 'no',
             'Specification-Vendor': 'Matyrobbrt',
             'Specification-Version': '1',
@@ -114,14 +55,4 @@ tasks.register('testJar', Jar) { Jar it ->
             'Implementation-Version': '12.12',
             'Implementation-Vendor': 'Matyrobbrt'
     ])
-}
-
-static String getGitCommit() {
-    def proc = 'git rev-parse --short HEAD'.execute()
-    proc.waitFor()
-    return proc.exitValue()? "ERROR(${proc.exitValue()})" : proc.text.trim()
-}
-
-static String groovyId(String name) {
-    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}"
 }
