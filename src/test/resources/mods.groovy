@@ -4,9 +4,9 @@ ModsDotGroovy.make {
     license = 'MIT'
 
     mod {
-        modId = 'testmod'
-        author = 'me'
-        displayName = 'no'
+        modId = 'gmltestmod'
+        author = 'Matyrobbrt'
+        displayName = 'GML Test Mod'
         version = '1.0'
     }
 }

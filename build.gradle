@@ -33,8 +33,7 @@ project.ext.manifestAttr = [
         'BundledGroovyVersion'  : project.groovy_version,
         'GitCommit'             : getGitCommit(),
         'FMLModType'            : 'LANGPROVIDER',
-        'Built-on-Minecraft'    : project.mc_version,
-        'DownloadHomepage'      : 'https://www.curseforge.com/minecraft/mc-mods/gml/files'
+        'Built-on-Minecraft'    : project.mc_version
 ]
 
 apply from: 'gradle/projectSetup.gradle'
@@ -66,7 +65,10 @@ repositories {
         name = 'Modding Inquisition Snapshots'
         url = 'https://maven.moddinginquisition.org/snapshots'
     }
-    maven { url = 'https://maven.moddinginquisition.org/releases' }
+    maven {
+        name = 'Modding Inquisition Releases'
+        url = 'https://maven.moddinginquisition.org/releases'
+    }
 }
 
 jij.onConfiguration('groovy') {
@@ -98,7 +100,7 @@ dependencies {
 
     modCompileOnly sourceSets.main.output
 
-    compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.1.0'
+    compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.2.0'
     include("io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}") {
         jij.onDependency(it as Dependency) {
             versionRange nextMajor
@@ -175,7 +177,7 @@ tasks.named('jijtestJar', ForgeJarInJarTask).configure {
 }
 
 static String getGitCommit() {
-    def proc = 'git rev-parse --short HEAD'.execute()
+    final proc = 'git rev-parse --short HEAD'.execute()
     proc.waitFor()
-    return proc.exitValue()? "ERROR(${proc.exitValue()})" : proc.text.trim()
+    return proc.exitValue() ? "ERROR(${proc.exitValue()})" : proc.text.trim()
 }
