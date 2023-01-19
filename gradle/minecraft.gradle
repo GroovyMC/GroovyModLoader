@@ -1,5 +1,5 @@
 minecraft {
-    mappings channel: 'parchment', version: '1.18.2-2022.07.17-1.19'
+    mappings channel: 'parchment', version: '2022.12.18-1.19.3'
     runs {
         client {}
         server {}
@@ -20,11 +20,11 @@ dependencies {
         )
     }
 }
+
 tasks.whenTaskAdded {
     if (it.name == 'runClient' || it.name == 'runServer') {
         it.dependsOn(':fullJar')
-    }
-    if (it.name == 'runJijtest') {
+    } else if (it.name == 'runJijtest') {
         it.dependsOn(':jijtestJar')
     }
 }

@@ -48,11 +48,11 @@ tasks.register('testJar', Jar) {
     from sourceSets.test.output
     classifier 'test'
     manifest.attributes([
-            'Specification-Title': 'no',
+            'Specification-Title': 'GMLTestMod',
             'Specification-Vendor': 'Matyrobbrt',
             'Specification-Version': '1',
-            'Implementation-Title': 'test',
-            'Implementation-Version': '12.12',
+            'Implementation-Title': 'GMLTestMod',
+            'Implementation-Version': '1.0',
             'Implementation-Vendor': 'Matyrobbrt'
     ])
 }
