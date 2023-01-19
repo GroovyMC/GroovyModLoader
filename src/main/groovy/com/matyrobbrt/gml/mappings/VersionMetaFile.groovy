@@ -7,13 +7,14 @@ package com.matyrobbrt.gml.mappings
 
 import com.google.gson.annotations.Expose
 import groovy.transform.CompileStatic
+import groovy.transform.stc.POJO
 
+@POJO
 @CompileStatic
 class VersionMetaFile {
     @Expose
     DownloadsMeta downloads
 
-    @CompileStatic
     static class DownloadsMeta {
         @Expose
         MappingsMeta client_mappings
@@ -21,7 +22,6 @@ class VersionMetaFile {
         MappingsMeta server_mappings
     }
 
-    @CompileStatic
     static class MappingsMeta {
         @Expose
         String sha1
