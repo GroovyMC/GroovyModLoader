@@ -50,7 +50,7 @@ class ExampleMod implements BaseGMod {
 ```
 
 ## Groovy Version
-The Groovy version provided by the latest version of GML is currently: **4.0.6**.  
+The Groovy version provided by the latest version of GML is currently: **4.0.7**.  
 To find out what Groovy version a built GML jar provides, you can read the `BundledGroovyVersion` property in the `META-INF/MANIFEST.MF`.
 
 Only releases will be supported by GML, not release candidates.
