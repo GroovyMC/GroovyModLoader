@@ -147,7 +147,7 @@ class MappingsProvider {
             officialParser.parse()
 
             // official class name, official -> srg
-            final methodsMap = new LinkedHashMap<String, Map<String, List<String>>>(8000)
+            final methodsMap = new LinkedHashMap<String, Map<String, List<String>>>(8250)
             final fieldsMap = new LinkedHashMap<String, Map<String, String>>(6500)
 
             final methods = new LinkedHashMap<String, List<String>>()
