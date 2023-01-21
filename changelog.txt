@@ -1,3 +1,3 @@
-- Port to 1.19.3
-- Bump Groovy to 4.0.7
-- Introduce script mods
+- Fix error thrown when script mods directory does not exist
+- Tweak dynamic remapper for 1.19.3
+- Re-add functioning EventBus extensions
