@@ -14,10 +14,10 @@ class SrgParser implements Closeable {
     final Reader reader
 
     // obf class name to map of obf -> srg names
-    // initial capacity is 9000 because on 1.19.2, max size ends up being 6859. Adding 25% to account for the Map's
+    // initial capacity is 9000 because on 1.19.3, max size ends up being 7135. Adding 25% to account for the Map's
     // default load factor and rounding *up* to the nearest 250. Re-adjust this every MC release for better performance.
-    final Map<String, Map<String, String>> methods = new LinkedHashMap<>(8750)
-    final Map<String, Map<String, String>> fields = new LinkedHashMap<>(8750)
+    final Map<String, Map<String, String>> methods = new LinkedHashMap<>(9000)
+    final Map<String, Map<String, String>> fields = new LinkedHashMap<>(9000)
 
     private Map<String, String> workingMethods
     private Map<String, String> workingFields
