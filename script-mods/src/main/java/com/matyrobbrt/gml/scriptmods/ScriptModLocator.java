@@ -91,6 +91,11 @@ public class ScriptModLocator implements IModLocator {
         final var files = new ArrayList<ModFileOrException>();
         getScanDirs().forEach(LamdbaExceptionUtils.rethrowConsumer(dir -> {
             final var dirAbs = dir.toAbsolutePath();
+            if (!Files.exists(dirAbs)) {
+                LOGGER.info("Skipped loading script mods from directory {} as it did not exist.", dirAbs);
+                return;
+            }
+
             try (final var stream = Files.walk(dir, 1)
                     .map(Path::toAbsolutePath)
                     .filter(it -> !dirAbs.equals(it))) {
