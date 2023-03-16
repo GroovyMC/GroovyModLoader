@@ -5,7 +5,6 @@
 
 package com.matyrobbrt.gml.mod;
 
-import com.mojang.bridge.game.GameVersion;
 import groovy.transform.CompileStatic;
 import net.minecraft.SharedConstants;
 import net.minecraft.WorldVersion;
@@ -20,11 +19,11 @@ public final class PackMCMetaVersionsGetter {
 
     static {
         try {
-            final WorldVersion currentVersion = (WorldVersion)ObfuscationReflectionHelper.findMethod(SharedConstants.class, "m_183709" + '_').invoke(null);
-            final Method getVersion = ObfuscationReflectionHelper.findMethod(PackType.class, "m_143756" + '_', GameVersion.class);
+            final WorldVersion currentVersion = (WorldVersion) ObfuscationReflectionHelper.findMethod(SharedConstants.class, "m_183709" + '_').invoke(null);
+            final Method getVersion = ObfuscationReflectionHelper.findMethod(WorldVersion.class, "m_264084" + '_', PackType.class);
             VERSIONS = new int[] {
-                    (int) getVersion.invoke(PackType.CLIENT_RESOURCES, currentVersion),
-                    (int) getVersion.invoke(PackType.SERVER_DATA, currentVersion)
+                    (int) getVersion.invoke(currentVersion, PackType.CLIENT_RESOURCES),
+                    (int) getVersion.invoke(currentVersion, PackType.SERVER_DATA)
             };
         } catch (Exception ex) {
             throw new RuntimeException("BARF!", ex);
@@ -33,6 +32,7 @@ public final class PackMCMetaVersionsGetter {
 
     /**
      * Called by GModContainer to get the pack.mcmeta versions from the currently running game for GroovyScripts.
+     *
      * @see com.matyrobbrt.gml.GModContainer
      */
     public static int[] get() {

@@ -101,7 +101,7 @@ dependencies {
     modCompileOnly sourceSets.main.output
 
     compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.2.0'
-    include("io.github.groovymc.cgl:cgl-${mc_version}-forge:${cgl_version}") {
+    include("io.github.groovymc.cgl:cgl-${cgl_mc_version}-forge:${cgl_version}") {
         jij.onDependency(it as Dependency) {
             versionRange nextMajor
         }

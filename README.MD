@@ -64,6 +64,8 @@ Please **do not** JiJ different versions of Groovy modules already bundled by GM
 ## MC Versions
 The major GML version is bumped every MC version. Below you can find a list of MC version -> GML version:
 - `1.19.2` -> `1.x.x`
+- `1.19.3` -> `2.x.x`
+- `1.19.4` -> `3.x.x`
 
 ## Shading GML
 While we would appreciate if you instead had a dependency on GML on [CurseForge](https://www.curseforge.com/minecraft/mc-mods/gml) in order provide us revenue, we understand that in some cases, you may not
