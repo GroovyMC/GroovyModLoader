@@ -1,3 +1,1 @@
-- Fix error thrown when script mods directory does not exist
-- Tweak dynamic remapper for 1.19.3
-- Re-add functioning EventBus extensions
+- Update Groovy to 4.0.10 and update CGL
