@@ -12,6 +12,10 @@ pluginManagement {
             name 'ParchmentMC'
             url 'https://maven.parchmentmc.org'
         }
+        maven {
+            name 'Modding Inquisition Releases'
+            url 'https://maven.moddinginquisition.org/releases'
+        }
         mavenCentral()
         gradlePluginPortal()
     }

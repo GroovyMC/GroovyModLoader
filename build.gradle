@@ -1,5 +1,7 @@
 import com.matyrobbrt.gradle.jarinjar.task.*
 import com.matyrobbrt.gradle.jarinjar.transform.ForgeManifestFixerTransformer
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+import org.eclipse.jgit.api.Git
 
 plugins {
     id 'groovy'
@@ -7,12 +9,26 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
     id 'com.matyrobbrt.jarinjar' version '1.0.0'
     id 'net.minecraftforge.gradle' version '5.1.+'
+    id 'io.github.groovymc.simpleci' version '0.1.16'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'com.modrinth.minotaur' version "${minotaur_version}"
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
+    id 'net.darkhax.curseforgegradle' version "${cursegradle_version}"
 }
 
 archivesBaseName = 'gml'
 group = 'com.matyrobbrt.gml'
+
+versioning {
+    fromTag.set('3.1')
+}
+final calculatedVersion = Git.open(rootProject.projectDir).withCloseable {
+    versioning.calculateVersion(it) { cm, info -> }
+}
+project.ext.versionBasedReleaseType = calculatedVersion.alphaBeta.betaNumber != -1 ? 'beta' : (calculatedVersion.alphaBeta.alphaNumber != -1 ? 'alpha' : 'release')
+allprojects { Project proj ->
+    println("${proj.name} version: ${proj.version = calculatedVersion.toString()}")
+}
 
 project.ext.groovyLibs = [
         'stdlib', 'contracts', 'datetime',
@@ -41,6 +57,7 @@ apply from: 'gradle/mdg.gradle'
 apply from: 'gradle/jars.gradle'
 apply from: 'gradle/compiler.gradle'
 
+tasks.register('publishCurseForge', TaskPublishCurseForge)
 tasks.register('fullJar', ForgeJarInJarTask)
 tasks.register('jijtestJar', ForgeJarInJarTask)
 apply from: 'gradle/minecraft.gradle'

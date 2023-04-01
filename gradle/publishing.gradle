@@ -1,33 +1,39 @@
 import groovy.transform.CompileStatic
-import net.darkhax.curseforgegradle.TaskPublishCurseForge
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 
-buildscript {
-    repositories {
-        gradlePluginPortal()
-    }
-    dependencies {
-        classpath "net.darkhax.curseforgegradle:CurseForgeGradle:${cursegradle_version}"
-    }
+modrinth {
+    token = findProperty('modrinthToken') ?: System.getenv('MODRINTH_TOKEN')
+    projectId = project.modrinth_project
+    versionNumber = project.version
+    versionType = project.ext.versionBasedReleaseType
+    uploadFile = tasks.fullJar
+    gameVersions = [mc_version]
+    loaders = ['forge']
+    changelog.set(tasks.changelog.output.map {
+        it.asFile.text
+    })
+}
+tasks.named('modrinth') {
+    dependsOn(tasks.fullJar, tasks.changelog)
 }
 
-tasks.register('publishCurseForge', TaskPublishCurseForge) {
-    it.apiToken = findProperty('curseforgeKey')
-    it.group = 'publishing'
-    it.disableVersionDetection()
+publishCurseForge {
+    apiToken = findProperty('curseforgeKey') ?: System.getenv('CURSEFORGE_TOKEN')
+    group = 'publishing'
+    disableVersionDetection()
 
-    var projectId = findProperty('curseforge_project')
-    var modFile = it.upload(projectId, tasks.getByName('fullJar'))
-    modFile.changelog = rootProject.file('changelog.txt')
-    modFile.releaseType = findProperty('release_type')
+    final projectId = findProperty('curseforge_project')
+    final modFile = upload(projectId, tasks.fullJar)
+    modFile.changelog = tasks.changelog.output.asFile.get()
+    modFile.releaseType = project.ext.versionBasedReleaseType
     modFile.displayName = "$archivesBaseName-$version" as String
     modFile.addJavaVersion 'Java 17'
     modFile.addModLoader 'Forge'
     modFile.addGameVersion "$mc_version"
 
-    it.dependsOn(fullJar)
-    it.finalizedBy(':makeReadme')
+    dependsOn(tasks.fullJar)
+    finalizedBy(':makeReadme')
 }
 
 publishing {
@@ -37,6 +43,7 @@ publishing {
                     jar, sourcesJar, fullJar, groovydocJar
             ]
             it.artifactId = 'gml'
+            changelog.addArtifact(it)
 
             pom {
                 withXml { XmlProvider xml ->

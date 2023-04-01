@@ -7,7 +7,6 @@ plugins {
 }
 
 group = 'com.matyrobbrt.gml'
-version = project.scriptmods_version
 archivesBaseName = 'script-mods'
 
 repositories {
@@ -65,6 +64,6 @@ jar {
             'Automatic-Module-Name': 'com.matyrobbrt.gml.scriptmods',
             'FMLModType': 'LIBRARY',
             'Implementation-Name': 'GScriptMods',
-            'Implementation-Version': version
+            'Implementation-Version': project.version
     ])
 }
