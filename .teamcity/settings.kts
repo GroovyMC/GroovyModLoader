@@ -1,10 +1,7 @@
 import jetbrains.buildServer.configs.kotlin.*
-import jetbrains.buildServer.configs.kotlin.buildFeatures.Swabra
-import jetbrains.buildServer.configs.kotlin.buildFeatures.commitStatusPublisher
-import jetbrains.buildServer.configs.kotlin.buildFeatures.swabra
+import jetbrains.buildServer.configs.kotlin.buildFeatures.*
 import jetbrains.buildServer.configs.kotlin.buildSteps.gradle
 import jetbrains.buildServer.configs.kotlin.triggers.vcs
-import jetbrains.buildServer.configs.kotlin.ui.add
 
 /*
 The settings script is an entry point for defining a TeamCity
@@ -44,21 +41,20 @@ object GroovyMC_GroovyModLoader_Build : BuildType({
     }
 
     features {
-        add {
-            swabra {
-                filesCleanup = Swabra.FilesCleanup.AFTER_BUILD
-                lockingProcesses = Swabra.LockingProcessPolicy.KILL
-            }
+        swabra {
+            filesCleanup = Swabra.FilesCleanup.BEFORE_BUILD
+            lockingProcesses = Swabra.LockingProcessPolicy.KILL
         }
-        add {
-            commitStatusPublisher {
-                publisher = github {
-                    githubUrl = "https://api.github.com"
-                    authType = personalToken {
-                        token = "%commit_status_publisher%"
-                    }
+        commitStatusPublisher {
+            publisher = github {
+                githubUrl = "https://api.github.com"
+                authType = personalToken {
+                    token = "%commit_status_publisher%"
                 }
             }
+        }
+        discordNotification {
+            webhookUrl = "%discord_webhook%"
         }
     }
 
@@ -66,11 +62,6 @@ object GroovyMC_GroovyModLoader_Build : BuildType({
         gradle {
             name = "Configure TeamCity information"
             tasks = "configureTeamCity"
-        }
-
-        gradle {
-            name = "Clean build directory"
-            tasks = "clean"
         }
 
         gradle {
