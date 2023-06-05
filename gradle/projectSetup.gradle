@@ -22,12 +22,14 @@ sourceSets {
     transform {
         compileClasspath += configurations.getByName('minecraft')
     }
-
-    test {
-        compileClasspath += transform.output
-    }
     extension {
         compileClasspath += configurations.getByName('minecraft')
+    }
+    test {
+        groovy {
+            compileClasspath += extension.output
+        }
+        compileClasspath += transform.output
     }
     mod {
         groovy {

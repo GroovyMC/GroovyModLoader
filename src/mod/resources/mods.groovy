@@ -3,7 +3,7 @@ ModsDotGroovy.make {
     loaderVersion = "[${this.version},)"
     license = 'MIT'
 
-    issueTrackerUrl = 'https://github.com/Matyrobbrt/GroovyModLoader/issues'
+    issueTrackerUrl = 'https://github.com/GroovyMC/GroovyModLoader/issues'
 
     mod {
         modId = 'gml'

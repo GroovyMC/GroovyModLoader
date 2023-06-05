@@ -5,6 +5,11 @@ minecraft {
         server {}
         jijtest {
             parent runs.client
+            mods {
+                test {
+                    source sourceSets.test
+                }
+            }
         }
     }
 }

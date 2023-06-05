@@ -6,19 +6,18 @@
 package testmod
 
 import com.matyrobbrt.gml.BaseGMod
-import com.matyrobbrt.gml.GMLModLoadingContext
 import com.matyrobbrt.gml.GMod
 import com.matyrobbrt.gml.bus.EventBusSubscriber
 import com.matyrobbrt.gml.bus.type.ModBus
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.eventbus.api.SubscribeEvent
-import net.minecraftforge.fml.ModLoadingContext
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
+import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent
 
 @Slf4j
 @CompileStatic
-@GMod('testmod')
+@GMod('gmltestmod')
 @EventBusSubscriber(ModBus)
 class TestMod implements BaseGMod {
     TestMod() {
@@ -32,11 +31,15 @@ class TestMod implements BaseGMod {
     TestMod(String shush, int val) {
         println shush
         println val + 12
+
+        modBus.addListener { FMLConstructModEvent event ->
+            log.warn('HI FROM FML CONSTRUCT MOD EVENT!')
+        }
     }
 
     @SubscribeEvent
     static void yes(final FMLCommonSetupEvent e) {
         log.warn('HI FROM COMMON SETUP!')
-        System.exit(0)
+        //System.exit(0)
     }
 }

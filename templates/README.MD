@@ -1,5 +1,5 @@
 ${header}
-[![GML Version](https://img.shields.io/badge/dynamic/xml?style=for-the-badge&color=red&label=Latest%20GML%20Version&prefix=v&query=metadata//latest&url=https://maven.moddinginquisition.org/releases/com/matyrobbrt/gml/gml/maven-metadata.xml)](https://maven.moddinginquisition.org/#/releases/com/matyrobbrt/gml/gml)
+[![Latest GML version](https://img.shields.io/badge/dynamic/xml?style=for-the-badge&color=red&label=Latest%20GML%20Version&prefix=v&query=metadata//latest&url=https://maven.moddinginquisition.org/releases/com/matyrobbrt/gml/gml/maven-metadata.xml)](https://maven.moddinginquisition.org/#/releases/com/matyrobbrt/gml/gml)
 # GroovyModLoader
 GroovyModLoader (GML) is a Forge language loader for Groovy mods.
 ## How to use
@@ -41,8 +41,10 @@ If you want IDE support alongside `@CompileStatic` for those properties, conside
 class ExampleMod implements BaseGMod {
     ExampleMod() {
         log.info('Hello from Groovy-land!')
+        
         modBus.register(ModBusEventHandler)
         forgeBus.register(ForgeBusEventHandler)
+        
         assert forgeBus === MinecraftForge.EVENT_BUS
         assert modBus === GMLModLoadingContext.get().getModEventBus()
     }

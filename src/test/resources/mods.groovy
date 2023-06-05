@@ -5,7 +5,7 @@ ModsDotGroovy.make {
 
     mod {
         modId = 'gmltestmod'
-        author = 'Matyrobbrt'
+        authors = ['Matyrobbrt', 'Paint_Ninja']
         displayName = 'GML Test Mod'
         version = '1.0'
     }
