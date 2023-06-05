@@ -9,7 +9,7 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
     id 'com.matyrobbrt.jarinjar' version '1.0.0'
     id 'net.minecraftforge.gradle' version '5.1.+'
-    id 'io.github.groovymc.simpleci' version '0.1.+'
+    id 'io.github.groovymc.simpleci' version '0.1.24'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
     id 'com.modrinth.minotaur' version "${minotaur_version}"
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
