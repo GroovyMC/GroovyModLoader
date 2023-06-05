@@ -13,6 +13,7 @@ import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.eventbus.api.SubscribeEvent
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent
+import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent
 
 @Slf4j
 @CompileStatic
@@ -30,6 +31,10 @@ class TestMod implements BaseGMod {
     TestMod(String shush, int val) {
         println shush
         println val + 12
+
+        modBus.addListener { FMLConstructModEvent event ->
+            log.warn('HI FROM FML CONSTRUCT MOD EVENT!')
+        }
     }
 
     @SubscribeEvent
