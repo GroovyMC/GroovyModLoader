@@ -16,7 +16,7 @@ ModsDotGroovy.make {
 
         dependencies {
             forge = "[${this.forgeVersion},)"
-            minecraft = '[1.19.3]'
+            minecraft = this.minecraftVersionRange
         }
     }
 }
