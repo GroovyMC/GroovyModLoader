@@ -1,4 +1,4 @@
 moduleName=gml-extensions
 moduleVersion=1.0.0
-extensionClasses=com.matyrobbrt.gml.extensions.EventBusExtensions
+extensionClasses=org.groovymc.gml.extensions.EventBusExtensions
 staticExtensionClasses=

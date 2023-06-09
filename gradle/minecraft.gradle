@@ -1,5 +1,5 @@
 minecraft {
-    mappings channel: 'parchment', version: '2022.12.18-1.19.3'
+    mappings channel: 'official', version: mc_version
     runs {
         client {}
         server {}

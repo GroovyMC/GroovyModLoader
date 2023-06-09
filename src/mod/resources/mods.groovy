@@ -13,6 +13,7 @@ ModsDotGroovy.make {
         version = this.version
         description = 'A mod loader for Groovy mods'
         logoFile = 'gml.png'
+        updateJsonUrl = 'https://maven.moddinginquisition.org/releases/org/groovymc/gml/gml/forge-promotions.json'
 
         dependencies {
             forge = "[${this.forgeVersion},)"

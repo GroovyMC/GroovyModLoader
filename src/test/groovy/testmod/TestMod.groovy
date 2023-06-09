@@ -5,10 +5,10 @@
 
 package testmod
 
-import com.matyrobbrt.gml.BaseGMod
-import com.matyrobbrt.gml.GMod
-import com.matyrobbrt.gml.bus.EventBusSubscriber
-import com.matyrobbrt.gml.bus.type.ModBus
+import org.groovymc.gml.BaseGMod
+import org.groovymc.gml.GMod
+import org.groovymc.gml.bus.EventBusSubscriber
+import org.groovymc.gml.bus.type.ModBus
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import net.minecraftforge.eventbus.api.SubscribeEvent

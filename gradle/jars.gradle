@@ -7,7 +7,7 @@ tasks.register('modJar', Jar) {
 tasks.named('jar', Jar).configure {
     from sourceSets.extension.output
     manifest.attributes(manifestAttr + [
-            'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
+            'Automatic-Module-Name': 'org.groovymc.gml', 'FMLModType': 'LANGPROVIDER'
     ])
 }
 java.withSourcesJar()

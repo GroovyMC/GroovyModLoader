@@ -3,9 +3,9 @@
   packages: [
     // GML stuff
     [
-      "com.matyrobbrt.gml",
-      "com.matyrobbrt.gml.bus",
-      "com.matyrobbrt.gml.bus.type"
+      "org.groovymc.gml",
+      "org.groovymc.gml.bus",
+      "org.groovymc.gml.bus.type"
     ],
 
     // Lifecycle events
@@ -37,7 +37,7 @@
   // Class imports
   classes: [
     // GML Stuff
-    "com.matyrobbrt.gml.bus.EventBusSubscriber as EBS",
+    "org.groovymc.gml.bus.EventBusSubscriber as EBS",
 
     // Lifecycle events, aliased for ease of usage
     [

@@ -3,16 +3,14 @@ import io.github.groovymc.modsdotgroovy.ModsDotGroovy
 
 buildscript {
     repositories {
-        maven {
-            name 'Modding Inquisition Releases'
-            url 'https://maven.moddinginquisition.org/releases'
-        }
         mavenCentral()
+        gradlePluginPortal()
     }
     dependencies {
-        classpath group: 'io.github.groovymc.modsdotgroovy', name: 'ModsDotGroovy', version: "${mdg_plugin_version}"
+        classpath 'org.groovymc.modsdotgroovy:ModsDotGroovy:1.4.+'
     }
 }
+
 apply plugin: ModsDotGroovy
 
 modsDotGroovy {

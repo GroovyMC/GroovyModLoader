@@ -6,7 +6,7 @@ plugins {
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
-group = 'com.matyrobbrt.gml'
+group = 'org.groovymc.gml'
 archivesBaseName = 'script-mods'
 
 repositories {
@@ -54,14 +54,14 @@ shadowJar {
 
 tasks.register('relocateShadowJar', ConfigureShadowRelocation) {
     target = tasks.shadowJar
-    prefix = 'com.matyrobbrt.gml.scriptmods.shadow'
+    prefix = 'org.groovymc.gml.scriptmods.shadow'
 }
 
 tasks.shadowJar.dependsOn tasks.relocateShadowJar
 
 jar {
     manifest.attributes([
-            'Automatic-Module-Name': 'com.matyrobbrt.gml.scriptmods',
+            'Automatic-Module-Name': 'org.groovymc.gml.scriptmods',
             'FMLModType': 'LIBRARY',
             'Implementation-Name': 'GScriptMods',
             'Implementation-Version': project.version

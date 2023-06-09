@@ -7,7 +7,7 @@ plugins {
     id 'groovy'
     id 'maven-publish'
     id 'org.cadixdev.licenser' version '0.6.1'
-    id 'com.matyrobbrt.jarinjar' version '1.0.0'
+    id 'com.matyrobbrt.jarinjar' version '1.0.+'
     id 'net.minecraftforge.gradle' version '5.1.+'
     id 'org.groovymc.simpleci' version '0.2.+'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
@@ -17,10 +17,10 @@ plugins {
 }
 
 archivesBaseName = 'gml'
-group = 'com.matyrobbrt.gml'
+group = 'org.groovymc.gml'
 
 versioning {
-    fromTag.set('3.1')
+    fromTag.set('4.0')
 }
 final calculatedVersion = Git.open(rootProject.projectDir).withCloseable {
     versioning.calculateVersion(it) { cm, info -> }
@@ -89,7 +89,7 @@ repositories {
 }
 
 jij.onConfiguration('groovy') {
-    final manifestFix = new ForgeManifestFixerTransformer(modType: 'LIBRARY', modulePrefix: 'com.matyrobbrt.gml.groovyjij')
+    final manifestFix = new ForgeManifestFixerTransformer(modType: 'LIBRARY', modulePrefix: 'org.groovymc.gml.groovyjij')
     eachMatching('.+') {
         versionRange nextMajor
         transform manifestFix
@@ -118,7 +118,7 @@ dependencies {
     modCompileOnly sourceSets.main.output
 
     compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.2.0'
-    include("io.github.groovymc.cgl:cgl-${cgl_mc_version}-forge:${cgl_version}") {
+    include("org.groovymc.cgl:cgl-${cgl_mc_version}-forge:${cgl_version}") {
         jij.onDependency(it as Dependency) {
             versionRange nextMajor
         }
@@ -156,7 +156,7 @@ tasks.register('groovyJar', ForgeJarInJarTask) {
     fromConfiguration(project.configurations.groovy)
     manifest.attributes(manifestAttr + [
             'Specification-Title': 'GML-GroovyFatJar',
-            'Automatic-Module-Name': 'com.matyrobbrt.gml.groovyjij'
+            'Automatic-Module-Name': 'org.groovymc.gml.groovyjij'
     ])
 }
 
@@ -165,7 +165,7 @@ tasks.named('fullJar', ForgeJarInJarTask).configure {
     from(sourceSets.transform.output)
     from(sourceSets.extension.output)
     manifest.attributes(manifestAttr + [
-            'Automatic-Module-Name': 'com.matyrobbrt.gml', 'FMLModType': 'LANGPROVIDER'
+            'Automatic-Module-Name': 'org.groovymc.gml', 'FMLModType': 'LANGPROVIDER'
     ])
     archiveClassifier.set('all')
     group('build')
@@ -188,7 +188,7 @@ tasks.named('jijtestJar', ForgeJarInJarTask).configure {
     fromJar(tasks.named('fullJar'))
     manifest.attributes([
             'Implementation-Version': project.version,
-            'Automatic-Module-Name' : 'com.matyrobbrt.gml.jijtest',
+            'Automatic-Module-Name' : 'org.groovymc.gml.jijtest',
             'FMLModType'            : 'LANGPROVIDER'
     ])
 }

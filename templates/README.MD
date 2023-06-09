@@ -1,5 +1,5 @@
 ${header}
-[![Latest GML version](https://img.shields.io/badge/dynamic/xml?style=for-the-badge&color=red&label=Latest%20GML%20Version&prefix=v&query=metadata//latest&url=https://maven.moddinginquisition.org/releases/com/matyrobbrt/gml/gml/maven-metadata.xml)](https://maven.moddinginquisition.org/#/releases/com/matyrobbrt/gml/gml)
+[![Latest GML version](https://img.shields.io/badge/dynamic/xml?style=for-the-badge&color=red&label=Latest%20GML%20Version&prefix=v&query=metadata//latest&url=https://maven.moddinginquisition.org/releases/org/groovymc/gml/gml/maven-metadata.xml)](https://maven.moddinginquisition.org/#/releases/org/groovymc/gml/gml)
 # GroovyModLoader
 GroovyModLoader (GML) is a Forge language loader for Groovy mods.
 ## How to use
@@ -14,8 +14,8 @@ repositories {
     }
 }
 dependencies {
-    compileOnly "com.matyrobbrt.gml:gml:${gmlVersion}"
-    runtimeOnly fg.deobf("com.matyrobbrt.gml:gml:${gmlVersion}:all") {
+    compileOnly "org.groovymc.gml:gml:${gmlVersion}"
+    runtimeOnly fg.deobf("org.groovymc.gml:gml:${gmlVersion}:all") {
         exclude module: 'transform'
     }
 }
@@ -68,6 +68,8 @@ The major GML version is bumped every MC version. Below you can find a list of M
 - `1.19.2` -> `1.x.x`
 - `1.19.3` -> `2.x.x`
 - `1.19.4` -> `3.x.x`
+- `1.20.0` -> `4.x.x`
+**NOTE**: 1.19.2 - 1.19.4 versions use the `com.matyrobbrt.gml` artifact group.
 
 ## Shading GML
 While we would appreciate if you instead had a dependency on GML on [CurseForge](https://www.curseforge.com/minecraft/mc-mods/gml) in order provide us revenue, we understand that in some cases, you may not
