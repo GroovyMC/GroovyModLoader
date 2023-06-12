@@ -35,6 +35,10 @@ class TestMod implements BaseGMod {
         modBus.addListener { FMLConstructModEvent event ->
             log.warn('HI FROM FML CONSTRUCT MOD EVENT!')
         }
+
+        modBus.onClientSetup {
+            log.warn("HI FROM ${it.class.simpleName}!")
+        }
     }
 
     @SubscribeEvent
