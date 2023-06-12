@@ -110,6 +110,8 @@ dependencies {
         groovy groovyDep(it as String)
     }
 
+    compileOnly sourceSets.extension.output
+
     transformCompileOnly sourceSets.main.output
 
     testCompileOnly sourceSets.main.output
