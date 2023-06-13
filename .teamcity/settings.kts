@@ -63,6 +63,11 @@ object GroovyMC_GroovyModLoader_Build : BuildType({
             name = "Configure TeamCity information"
             tasks = "configureTeamCity"
         }
+		
+        gradle {
+            name = "Clean build directory"
+            tasks = "clean"
+        }
 
         gradle {
             name = "Build Gradle Project"
