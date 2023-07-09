@@ -13,7 +13,7 @@ plugins {
     id 'com.matyrobbrt.jarinjar' version '1.2.+'
     id 'net.minecraftforge.gradle' version '[6.0,6.2)'
     id 'org.groovymc.simpleci' version '0.2.+'
-    id 'org.groovymc.modsdotgroovy' version '1.4.+'
+    id 'org.groovymc.modsdotgroovy' version "${mdg_plugin_version}"
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
     id 'com.modrinth.minotaur' version "${minotaur_version}"
     id 'com.github.johnrengelman.shadow' version '8.1.1' apply false
