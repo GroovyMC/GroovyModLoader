@@ -22,6 +22,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLConstructModEvent
 class TestMod implements BaseGMod {
     TestMod() {
         this('hi')
+        log.warn(SV(GroovySystem.version))
     }
 
     TestMod(String shush) {
