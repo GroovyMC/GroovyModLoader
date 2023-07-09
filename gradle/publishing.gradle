@@ -2,59 +2,28 @@ import groovy.transform.CompileStatic
 import org.w3c.dom.Document
 import org.w3c.dom.Element
 
-modrinth {
-    token = findProperty('modrinthToken') ?: System.getenv('MODRINTH_TOKEN')
-    projectId = project.modrinth_project
-    versionNumber = project.version
-    versionType = project.ext.versionBasedReleaseType
-    uploadFile = tasks.fullJar
-    gameVersions = [mc_version]
-    loaders = ['forge']
-    changelog.set(tasks.changelog.output.map {
-        it.asFile.text
-    })
-}
-tasks.named('modrinth') {
-    dependsOn(tasks.fullJar, tasks.changelog)
-}
-
-publishCurseForge {
-    apiToken = findProperty('curseforgeKey') ?: System.getenv('CURSEFORGE_TOKEN')
-    group = 'publishing'
-    disableVersionDetection()
-
-    final projectId = findProperty('curseforge_project')
-    final modFile = upload(projectId, tasks.fullJar)
-    modFile.changelog = tasks.changelog.output.asFile.get()
-    modFile.releaseType = project.ext.versionBasedReleaseType
-    modFile.displayName = "$archivesBaseName-$version" as String
-    modFile.addJavaVersion 'Java 17'
-    modFile.addModLoader 'Forge'
-    modFile.addGameVersion "$mc_version"
-
-    dependsOn(tasks.fullJar)
-    finalizedBy(':makeReadme')
-}
+/*
+ * Note: The Modrinth and CurseForge publishing tasks have been moved
+ *       to the main build.gradle file to allow for lazy configuration
+ */
 
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
-            it.artifacts = [
-                    jar, sourcesJar, fullJar, groovydocJar
-            ]
             it.artifactId = 'gml'
-            changelog.addArtifact(it)
+            it.artifacts = [jar, sourcesJar, fullJar, groovydocJar]
+            changelog.addArtifact(it) // add this MavenPublication containing the artifacts to SimpleCI's ChangelogTask
 
             pom {
                 withXml { XmlProvider xml ->
                     final element = xml.asElement()
-                    var depsElem = element.getOwnerDocument().createElement('dependencies')
-                    var owner = element.getOwnerDocument()
+                    var depsElem = element.ownerDocument.createElement('dependencies')
+                    var owner = element.ownerDocument
                     var deps = (DependencySet) project.configurations.groovy.getDependencies()
                     deps.each {
                         depsElem.appendChild createDependency(owner, it.group, it.name, it.version, 'compile')
                     }
-                    depsElem.appendChild createDependency(owner, project.group, 'transform', project.version, 'compile')
+                    depsElem.appendChild createDependency(owner, project.group as String, 'transform', (String) project.version as String, 'compile')
                     element.appendChild(depsElem)
                 }
             }
@@ -62,11 +31,12 @@ publishing {
         register('transform', MavenPublication) {
             it.artifactId = 'transform'
             it.artifacts = [transformJar, transformSources]
+
             pom {
                 withXml { XmlProvider xml ->
                     final element = xml.asElement()
-                    var depsElem = element.getOwnerDocument().createElement('dependencies')
-                    var owner = element.getOwnerDocument()
+                    var depsElem = element.ownerDocument.createElement('dependencies')
+                    var owner = element.ownerDocument
                     var deps = (DependencySet) project.configurations.groovy.getDependencies()
                     deps.each {
                         depsElem.appendChild createDependency(owner, it.group, it.name, it.version, 'compile')
@@ -89,7 +59,7 @@ publishing {
 }
 
 @CompileStatic
-static Element createDependency(Document owner, String group, String name, String version, String scope) {
+private static Element createDependency(Document owner, String group, String name, String version, String scope) {
     var sub = owner.createElement('dependency')
 
     var groupEl = owner.createElement('groupId')

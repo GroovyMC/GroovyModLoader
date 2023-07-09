@@ -69,9 +69,28 @@ The major GML version is bumped every MC version. Below you can find a list of M
 - `1.19.3` -> `2.x.x`
 - `1.19.4` -> `3.x.x`
 - `1.20.0` -> `4.x.x`
+
 **NOTE**: 1.19.2 - 1.19.4 versions use the `com.matyrobbrt.gml` artifact group.
 
 ## Shading GML
 While we would appreciate if you instead had a dependency on GML on [CurseForge](https://www.curseforge.com/minecraft/mc-mods/gml) in order provide us revenue, we understand that in some cases, you may not
 want to depend on another mod. Fortunately, we _are_ JiJ-able.  
 If you want to JiJ GML, just follow the guide [here](https://forge.gemwire.uk/wiki/Jar-in-Jar) but replace GSON with the `all` version of GML (the `runtimeOnly` one).
+
+## Contributing
+We welcome contributions to GML. If you want to contribute, please open a PR with your changes.
+
+### Troubleshooting
+
+#### Unable to build
+Make sure to include the Git tags when forking, as they are used to determine the version of GML and the build will fail if they are not present:
+```shell
+git fetch --tags upstream
+git push --tags
+```
+
+#### GML not showing up in-game when running in IDE
+Developing GML requires you to use the Gradle run tasks to test your changes rather than the IDE run configurations, for example, use `./gradlew runClient` instead of the IntelliJ `runClient` run configuration.
+
+#### Updating the README
+Remember to run the `makeReadme` task when updating the README template or Groovy version, otherwise the README will be outdated.
