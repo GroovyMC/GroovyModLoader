@@ -1,3 +1,7 @@
+/*
+ * Note: The JiJ-related jar tasks (such as groovyJar and fullJar) are in the main build.gradle file
+ */
+
 tasks.register('modJar', Jar) {
     from sourceSets.mod.output
     manifest.attributes(manifestAttr - ['FMLModType': 'LANGPROVIDER'])
@@ -7,19 +11,19 @@ tasks.register('modJar', Jar) {
 tasks.named('jar', Jar).configure {
     from sourceSets.extension.output
     manifest.attributes(manifestAttr + [
-            'Automatic-Module-Name': 'org.groovymc.gml', 'FMLModType': 'LANGPROVIDER'
+            'Automatic-Module-Name': 'org.groovymc.gml',
+            'FMLModType': 'LANGPROVIDER'
     ])
 }
 java.withSourcesJar()
 
-groovydoc {
+tasks.named('groovydoc', Groovydoc).configure {
     use = true
     source(sourceSets.transform.allSource)
     source(sourceSets.extension.allSource)
 }
-
 tasks.register('groovydocJar', Jar) {
-    classifier 'javadoc'
+    archiveClassifier = 'javadoc'
     from groovydoc.destinationDir
     dependsOn(groovydoc)
 }
@@ -34,7 +38,6 @@ tasks.register('transformJar', Jar) {
     archiveBaseName.set('transform')
     destinationDirectory.set(transformDest)
 }
-
 tasks.register('transformSources', Jar) {
     from sourceSets.transform.allSource
     manifest.attributes(transformAttr)
@@ -46,13 +49,13 @@ tasks.register('transformSources', Jar) {
 tasks.register('testJar', Jar) {
     group 'build'
     from sourceSets.test.output
-    classifier 'test'
+    archiveClassifier = 'test'
     manifest.attributes([
             'Specification-Title': 'GMLTestMod',
             'Specification-Vendor': 'Matyrobbrt',
             'Specification-Version': '1',
             'Implementation-Title': 'GMLTestMod',
-            'Implementation-Version': '1.0',
-            'Implementation-Vendor': 'Matyrobbrt'
+            'Implementation-Vendor': 'Matyrobbrt',
+            'Implementation-Version': '1.0'
     ])
 }

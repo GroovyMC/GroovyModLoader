@@ -1,8 +1,8 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '7.1.2'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id 'org.cadixdev.licenser' version '0.6.1'
 }
 
@@ -12,6 +12,7 @@ archivesBaseName = 'script-mods'
 repositories {
     mavenCentral()
     maven {
+        name = 'MinecraftForge'
         url = 'https://maven.minecraftforge.net'
     }
     maven {
@@ -37,7 +38,7 @@ dependencies {
         exclude module: 'checker-compat-qual'
         exclude module: 'auto-service-annotation'
     }
-    implementation'com.google.jimfs:jimfs:1.2'
+    implementation 'com.google.jimfs:jimfs:1.2'
 }
 
 shadowJar {
@@ -52,14 +53,12 @@ shadowJar {
     // }
 }
 
-tasks.register('relocateShadowJar', ConfigureShadowRelocation) {
-    target = tasks.shadowJar
-    prefix = 'org.groovymc.gml.scriptmods.shadow'
+tasks.named('shadowJar', ShadowJar) {
+    enableRelocation true
+    relocationPrefix 'org.groovymc.gml.scriptmods.shadow'
 }
 
-tasks.shadowJar.dependsOn tasks.relocateShadowJar
-
-jar {
+tasks.named('jar', Jar) {
     manifest.attributes([
             'Automatic-Module-Name': 'org.groovymc.gml.scriptmods',
             'FMLModType': 'LIBRARY',
