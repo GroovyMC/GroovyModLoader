@@ -96,6 +96,13 @@ jij.onConfiguration('groovy') {
     }
 }
 
+jij.onConfiguration('includeLibrary') {
+    final manifestFix = new ForgeManifestFixerTransformer(modType: 'LIBRARY', modulePrefix: 'org.groovymc.gml.srgutilsjij')
+    eachMatching('.+') {
+        transform manifestFix
+    }
+}
+
 jij.onConfiguration('modsDotGroovy') {
     eachMatching('.+') {
         path = 'mdg-dsl.jar'
@@ -121,6 +128,13 @@ dependencies {
 
     compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.2.0'
     include("org.groovymc.cgl:cgl-${cgl_mc_version}-forge:${cgl_version}") {
+        jij.onDependency(it as Dependency) {
+            versionRange nextMajor
+        }
+    }
+
+    implementation("net.minecraftforge:srgutils:${srgutils_version}")
+    includeLibrary("net.minecraftforge:srgutils:${srgutils_version}") {
         jij.onDependency(it as Dependency) {
             versionRange nextMajor
         }
@@ -175,6 +189,7 @@ tasks.named('fullJar', ForgeJarInJarTask).configure {
     fromJar(tasks.named('modJar')) { versionRange nextMajor }
     fromJar(tasks.named('groovyJar')) { versionRange nextMajor }
     fromConfiguration(project.configurations.include)
+    fromConfiguration(project.configurations.includeLibrary)
     fromConfiguration(project.configurations.modsDotGroovy)
 
     tasks.build.dependsOn(it)
