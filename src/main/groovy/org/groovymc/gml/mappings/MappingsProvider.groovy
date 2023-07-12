@@ -13,6 +13,7 @@ import cpw.mods.modlauncher.api.IEnvironment
 import groovy.transform.CompileStatic
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.fml.loading.FMLLoader
+import net.minecraftforge.srgutils.IMappingFile
 import org.apache.commons.codec.binary.Hex
 import org.slf4j.Logger
 
@@ -138,50 +139,54 @@ class MappingsProvider {
 
     private void loadLayeredMappings() throws IOException {
         try (final ZipFile zip = new ZipFile(zipPath.toFile())
-             final InputStream joined = zip.getInputStream(new ZipEntry(JOINED_PATH))
-             final SrgParser srgParser = new SrgParser(joined.newReader())
-             final OfficialParser officialParser = new OfficialParser(officialPath.newReader())) {
-
-            srgParser.parse()
-            officialParser.parse()
+             final InputStream joined = zip.getInputStream(new ZipEntry(JOINED_PATH))) {
+            final srgFile = IMappingFile.load(joined)
+            final officialFile = IMappingFile.load(officialPath.newInputStream()).reverse()
 
             // official class name, official -> srg
             final methodsMap = new LinkedHashMap<String, Map<String, List<String>>>(8250)
             final fieldsMap = new LinkedHashMap<String, Map<String, String>>(6500)
 
-            final methods = new LinkedHashMap<String, List<String>>()
-            final fields = new LinkedHashMap<String, String>()
-            officialParser.classes.forEach((String official, String obf) -> {
-                final srgMethods = srgParser.methods.get(obf)
-                final srgFields = srgParser.fields.get(obf)
+            officialFile.classes.each { IMappingFile.IClass clazz ->
+                final String official = clazz.getMapped()
+                final String obf = clazz.getOriginal()
+
+                final methods = new LinkedHashMap<String, List<String>>()
+                final fields = new LinkedHashMap<String, String>()
+
+                final srgMethods = srgFile.getClass(obf)?.methods
+                final srgFields = srgFile.getClass(obf)?.fields
 
                 if (srgFields === null || srgMethods === null) return
                 final String dotSeparatedOfficial = official.replace('/', '.')
 
-                final officialMethods = officialParser.methods.get(obf)
-                if (!officialMethods.isEmpty()) {
-                    methods.clear()
-                    officialMethods.forEach((mMoj, mObf) -> {
-                        final List<String> srg = mObf.collect { srgMethods.get(it) }
-                        if (srg === null || srg.isEmpty()) return
-                        methods.put(mMoj, srg)
-                    })
+                final officialMethods = officialFile.getClass(obf).methods
+                if (!officialMethods.empty) {
+                    officialMethods.each { IMappingFile.IMethod method ->
+                        String mMoj = method.mapped
+                        String mObf = method.original
+                        String mObfDesc = method.descriptor
+                        String mSrg = srgFile.getClass(obf).getMethod(mObf, mObfDesc)?.mapped
+                        if (mSrg === null || mSrg == mObf) return
+                        final outSrg = methods.computeIfAbsent(mMoj, {[]})
+                        outSrg.add(mSrg)
+                    }
                     if (!methods.isEmpty())
                         methodsMap.put(dotSeparatedOfficial, methods)
                 }
 
-                final officialFields = officialParser.fields.get(obf)
-                if (!officialFields.isEmpty()) {
-                    fields.clear()
-                    officialFields.forEach((fMoj, fObf) -> {
-                        final String srg = srgFields.get(fObf)
-                        if (srg === null) return
+                final officialFields = officialFile.getClass(obf).fields
+                if (!officialFields.empty) {
+                    officialFields.each { IMappingFile.IField field ->
+                        final String fMoj = field.mapped
+                        final String srg = srgFile.getClass(obf).getField(field.original)?.mapped
+                        if (srg === null || fMoj == srg) return
                         fields.put(fMoj, srg)
-                    })
+                    }
                     if (!fields.isEmpty())
                         fieldsMap.put(dotSeparatedOfficial, fields)
                 }
-            })
+            }
 
             mappingsProvider.complete(new LoadedMappings(methodsMap, fieldsMap))
         }

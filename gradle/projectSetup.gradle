@@ -16,6 +16,7 @@ configurations {
     globalCompile.extendsFrom(groovy)
 
     include
+    includeLibrary
 }
 
 sourceSets {
