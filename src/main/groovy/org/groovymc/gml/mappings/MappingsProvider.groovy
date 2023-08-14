@@ -7,6 +7,7 @@ package org.groovymc.gml.mappings
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.mojang.datafixers.util.Either
 import com.mojang.logging.LogUtils
 import cpw.mods.modlauncher.Launcher
 import cpw.mods.modlauncher.api.IEnvironment
@@ -51,14 +52,14 @@ class MappingsProvider {
 
     private final String version = FMLLoader.versionInfo().mcVersion()
     private final Path gameDir = Launcher.INSTANCE.environment().getProperty(IEnvironment.Keys.GAMEDIR.get()).get()
-    private final Path cacheDir = gameDir.resolve('mod_data/gml')
+    private final Path cacheDir = gameDir.resolve('mod_data/gml').resolve(version)
     private final Path zipPath = cacheDir.resolve(MCPCONFIG_ZIP)
     private final Path versionJsonPath = cacheDir.resolve(VERSION_JSON)
     private final Path officialPath = cacheDir.resolve(OFFICIAL)
     private final String mcpVersion = FMLLoader.versionInfo().mcpVersion()
     private final GString mcpConfigURL = "https://maven.minecraftforge.net/de/oceanlabs/mcp/mcp_config/${version}-${mcpVersion}/mcp_config-${version}-${mcpVersion}.zip"
 
-    final CompletableFuture<LoadedMappings> mappingsProvider = new CompletableFuture<LoadedMappings>()
+    final CompletableFuture<Either<LoadedMappings, Throwable>> mappingsProvider = new CompletableFuture<Either<LoadedMappings, Throwable>>()
 
     private boolean setup = false
 
@@ -76,7 +77,7 @@ class MappingsProvider {
         Thread mappingsThread = new Thread(runnable, MAPPINGS_THREAD)
         mappingsThread.setUncaughtExceptionHandler { t, e ->
             LOGGER.error('Caught exception while setting up mappings...', e)
-            mappingsProvider.complete(null)
+            mappingsProvider.complete(Either.right(e))
         }
         return mappingsThread
     }
@@ -87,52 +88,42 @@ class MappingsProvider {
             LOGGER.info('Starting runtime mappings setup...')
             setup = true
 
-            if (Files.exists(versionJsonPath)) {
+            if (Files.exists(versionJsonPath) && Files.exists(zipPath) && Files.exists(officialPath)) {
                 Thread mappingsThread = setupMappingsThread {
                     loadLayeredMappings()
                     LOGGER.info('Finished runtime mappings setup.')
                 }
                 mappingsThread.start()
             } else {
-                try {
-                    // Now, download and parse off-thread.
-                    Thread mappingsThread = setupMappingsThread {
-                        try {
-                            InputStream manifestInput = downloadFile(PISTON_META)
-                            BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestInput))
-                            ManifestMetaFile manifestMeta = GSON.fromJson(manifestReader, ManifestMetaFile)
-                            ManifestMetaFile.VersionMeta versionMeta = manifestMeta.versions.find { it.id == this.version }
-                            if (!Files.exists(cacheDir)) Files.createDirectories(cacheDir)
-                            LOGGER.info('Found version metadata from piston-meta.')
+                Thread mappingsThread = setupMappingsThread {
+                    try {
+                        InputStream manifestInput = downloadFile(PISTON_META)
+                        BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestInput))
+                        ManifestMetaFile manifestMeta = GSON.fromJson(manifestReader, ManifestMetaFile)
+                        ManifestMetaFile.VersionMeta versionMeta = manifestMeta.versions.find { it.id == this.version }
+                        if (!Files.exists(cacheDir)) Files.createDirectories(cacheDir)
+                        LOGGER.info('Found version metadata from piston-meta.')
 
-                            checkAndUpdateVersionFile(versionMeta)
-                            LOGGER.info('version.json is up to date.')
+                        checkAndUpdateVersionFile(versionMeta)
+                        LOGGER.info('version.json is up to date.')
 
-                            checkAndUpdateOfficialFile()
-                            LOGGER.info('Official mappings are up to date.')
+                        checkAndUpdateOfficialFile()
+                        LOGGER.info('Official mappings are up to date.')
 
-                            checkAndUpdateMCPConfigFile()
-                            LOGGER.info('MCPConfig is up to date.')
+                        checkAndUpdateMCPConfigFile()
+                        LOGGER.info('MCPConfig is up to date.')
 
-                            loadLayeredMappings()
-                            LOGGER.info('Finished runtime mappings setup.')
-                        } catch (IOException e) {
-                            // Error state, I couldn't make mappings.
-                            throw e
-                        } catch (NoSuchElementException e) {
-                            // Error state, not a known version? Huh?
-                            throw e
-                        }
-                    }
-                    mappingsThread.start()
-                } catch (IOException | InterruptedException e) {
-                    LOGGER.info("Couldn't connect to piston-meta. Looking for cached file instead.")
-                    Thread mappingsThread = setupMappingsThread {
                         loadLayeredMappings()
                         LOGGER.info('Finished runtime mappings setup.')
+                    } catch (IOException e) {
+                        // Error state, I couldn't make mappings.
+                        throw e
+                    } catch (NoSuchElementException e) {
+                        // Error state, not a known version? Huh?
+                        throw e
                     }
-                    mappingsThread.start()
                 }
+                mappingsThread.start()
             }
         }
     }
@@ -188,7 +179,7 @@ class MappingsProvider {
                 }
             }
 
-            mappingsProvider.complete(new LoadedMappings(methodsMap, fieldsMap))
+            mappingsProvider.complete(Either.left(new LoadedMappings(methodsMap, fieldsMap)))
         }
         LOGGER.info "Loaded runtime mappings in ${System.currentTimeMillis() - startTime}ms"
     }
