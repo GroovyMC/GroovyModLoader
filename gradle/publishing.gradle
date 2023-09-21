@@ -36,6 +36,40 @@ publishCurseForge {
     finalizedBy(':makeReadme')
 }
 
+nexusPublishing {
+    repositories {
+        sonatype {
+            username.set(System.getenv('SONATYPE_USER') ?: '')
+            password.set(System.getenv('SONATYPE_PASSWORD') ?: '')
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+        }
+    }
+}
+
+def sharedMetadata(MavenPom it) {
+    it.packaging = 'jar'
+    it.url = 'https://github.com/GroovyMC/GroovyModLoader'
+    it.inceptionYear = '2022'
+    it.licenses {
+        license {
+            name = 'MIT'
+            url = 'https://opensource.org/license/mit/'
+        }
+    }
+    it.developers {
+        developer {
+            id = 'groovymc'
+            name = 'GroovyMC'
+            email = 'holdings@groovymc.org'
+            url = 'https://github.com/GroovyMC/'
+        }
+    }
+    it.scm {
+        connection='scm:git:git://github.com/GroovyMC/GroovyModLoader.git'
+        url='https://github.com/GroovyMC/GroovyModLoader'
+    }
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
@@ -46,6 +80,9 @@ publishing {
             changelog.addArtifact(it)
 
             pom {
+                name = 'GML'
+                description = 'A language provider for Forge mods for Groovy'
+                sharedMetadata(it)
                 withXml { XmlProvider xml ->
                     final element = xml.asElement()
                     var depsElem = element.getOwnerDocument().createElement('dependencies')
@@ -63,6 +100,9 @@ publishing {
             it.artifactId = 'transform'
             it.artifacts = [transformJar, transformSources]
             pom {
+                name = 'GML - Transform'
+                description = 'Compile-time transforms for GML'
+                sharedMetadata(it)
                 withXml { XmlProvider xml ->
                     final element = xml.asElement()
                     var depsElem = element.getOwnerDocument().createElement('dependencies')
@@ -76,15 +116,15 @@ publishing {
             }
         }
     }
-    repositories {
-        maven {
-            name = 'ModdingInquisitionMavenRepo'
-            url = 'https://maven.moddinginquisition.org/releases'
-            credentials {
-                username = (System.getenv('MAVEN_USER') ?: findProperty('inquisitionMavenUser')) ?: ''
-                password = (System.getenv('MAVEN_PASSWORD') ?: findProperty('inquisitionMavenPassword')) ?: ''
-            }
-        }
+}
+
+if (System.getenv('SONATYPE_USER')) {
+    signing {
+        final signingKey = System.getenv('SIGNING_KEY') ?: ''
+        final signingPassword = System.getenv('SIGNING_PASSWORD') ?: ''
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.mavenJava
+        sign publishing.publications.transform
     }
 }
 
