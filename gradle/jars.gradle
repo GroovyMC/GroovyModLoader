@@ -10,7 +10,9 @@ tasks.named('jar', Jar).configure {
             'Automatic-Module-Name': 'org.groovymc.gml', 'FMLModType': 'LANGPROVIDER'
     ])
 }
+
 java.withSourcesJar()
+java.withJavadocJar()
 
 groovydoc {
     use = true
@@ -40,6 +42,19 @@ tasks.register('transformSources', Jar) {
     manifest.attributes(transformAttr)
     archiveBaseName.set('transform')
     archiveClassifier.set('sources')
+    destinationDirectory.set(transformDest)
+}
+
+tasks.register('transformGroovydoc', Groovydoc) {
+    source sourceSets.transform.allSource
+    classpath = sourceSets.transform.compileClasspath
+    destinationDir = new File(transformDest, 'groovydoc')
+}
+
+tasks.register('transformJavadocJar', Jar) {
+    classifier 'javadoc'
+    from tasks.transformGroovydoc.destinationDir
+    dependsOn('transformGroovydoc')
     destinationDirectory.set(transformDest)
 }
 

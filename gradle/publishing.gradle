@@ -98,7 +98,7 @@ publishing {
         }
         register('transform', MavenPublication) {
             it.artifactId = 'transform'
-            it.artifacts = [transformJar, transformSources]
+            it.artifacts = [transformJar, transformSources, transformJavadocJar]
             pom {
                 name = 'GML - Transform'
                 description = 'Compile-time transforms for GML'
