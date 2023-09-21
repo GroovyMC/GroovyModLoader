@@ -15,7 +15,7 @@ modrinth {
     })
 }
 tasks.named('modrinth') {
-    dependsOn(tasks.fullJar, tasks.changelog)
+    dependsOn(tasks.fullJar, tasks.changelog, tasks.makeReadme)
 }
 
 publishCurseForge {
