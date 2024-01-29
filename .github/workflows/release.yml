@@ -17,11 +17,11 @@ jobs:
         with:
           distribution: "temurin"
           java-version: 17
-      - uses: gradle/gradle-build-action@v2
+      - uses: gradle/gradle-build-action@v3
         with:
           arguments: checkLicenses build
           cache-read-only: ${{ !startsWith(github.ref, 'refs/heads/1.') }}
-      - uses: gradle/gradle-build-action@v2
+      - uses: gradle/gradle-build-action@v3
         with:
           arguments: publish closeAndReleaseSonatypeStagingRepository publishCurseforge modrinth
           cache-read-only: ${{ !startsWith(github.ref, 'refs/heads/1.') }}
