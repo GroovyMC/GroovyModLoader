@@ -15,7 +15,6 @@ import groovy.transform.CompileStatic
 import net.minecraftforge.api.distmarker.Dist
 import net.minecraftforge.fml.loading.FMLLoader
 import net.minecraftforge.srgutils.IMappingFile
-import org.apache.commons.codec.binary.Hex
 import org.slf4j.Logger
 
 import java.net.http.HttpClient
@@ -189,7 +188,7 @@ class MappingsProvider {
 
         if (Files.exists(versionJsonPath)) {
             byte[] existingSha1 = calcSha1(versionJsonPath)
-            byte[] knownSha1 = Hex.decodeHex(sha1)
+            byte[] knownSha1 = decodeHex(sha1)
             if (Arrays.equals(knownSha1, existingSha1)) return
             LOGGER.warn 'Checksum mismatch for version.json'
             LOGGER.warn "Expected: $knownSha1"
@@ -199,6 +198,23 @@ class MappingsProvider {
         try (InputStream versionStream = downloadFile(versionMeta.url)) {
             Files.copy(versionStream, versionJsonPath, StandardCopyOption.REPLACE_EXISTING)
         }
+    }
+
+    private static byte[] decodeHex(String hex) {
+        int l = hex.length()
+        int len = l.intdiv(2)
+        byte[] data = new byte[len]
+        for (int i = 0; i < len; i += 1) {
+            data[i] = (byte) ((hexDigit(hex.charAt(i*2)) << 4)
+                    + hexDigit(hex.charAt(i*2 + 1)))
+        }
+        return data
+    }
+
+    private static byte hexDigit(char ch) {
+        int digit = Character.digit(ch, 16)
+        if (digit == -1) throw new IllegalArgumentException("Invalid hex digit: $ch")
+        return (byte) digit
     }
 
     private void checkAndUpdateMCPConfigFile() throws IOException {
@@ -224,7 +240,7 @@ class MappingsProvider {
 
         if (Files.exists(officialPath)) {
             byte[] existingSha1 = calcSha1(officialPath)
-            byte[] knownSha1 = Hex.decodeHex(sha1)
+            byte[] knownSha1 = decodeHex(sha1)
             if (Arrays.equals(knownSha1, existingSha1)) return
         }
 
