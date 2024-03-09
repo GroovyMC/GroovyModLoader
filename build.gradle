@@ -61,7 +61,6 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
 repositories {
     mavenCentral()
-    mavenLocal()
 }
 
 sourceSets.each {
@@ -105,9 +104,6 @@ runs {
 
 dependencies {
     implementation "net.neoforged:neoforge:${project.neo_version}"
-
-    // TODO: remove and update in GML-core
-    compileOnly "org.groovymc:groovybundler:2.1.2"
 
     expose "org.groovymc.gml:gml-core:${project.gml_core_version}"
     expose "org.groovymc.cgl:cgl-1.20.4-neoforge:${project.cgl_version}"

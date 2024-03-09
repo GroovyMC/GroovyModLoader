@@ -8,7 +8,6 @@ pluginManagement {
             name = "Luke's Maven"
             url = 'https://maven.lukebemish.dev/releases/'
         }
-        mavenLocal()
         gradlePluginPortal()
     }
 }
