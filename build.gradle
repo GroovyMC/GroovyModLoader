@@ -45,8 +45,8 @@ managedVersioning {
                 secret('CENTRAL_MAVEN_PASSWORD')
                 secret('GPG_SIGNING_KEY')
                 secret('GPG_KEY_PASSWORD')
-                secret('CURSEFORGE_TOKEN')
-                secret('MODRINTH_TOKEN')
+                secret('CURSEFORGE_KEY')
+                secret('MODRINTH_KEY')
             }
         }
     }
@@ -259,11 +259,11 @@ def mcVersion() {
 
 import net.darkhax.curseforgegradle.TaskPublishCurseForge
 
-if (System.getenv('CURSEFORGE_TOKEN')) {
+if (System.getenv('CURSEFORGE_KEY')) {
     tasks.register('curseforge', TaskPublishCurseForge) {
         dependsOn tasks.fullJar
         disableVersionDetection()
-        apiToken = System.getenv('CURSEFORGE_TOKEN')
+        apiToken = System.getenv('CURSEFORGE_KEY')
         def projectId = '661517'
         def mainFile = upload(projectId, tasks.fullJar)
         mainFile.displayName = "gml-$project.version"
@@ -274,10 +274,10 @@ if (System.getenv('CURSEFORGE_TOKEN')) {
     }
 }
 
-if (System.getenv('MODRINTH_TOKEN')) {
+if (System.getenv('MODRINTH_KEY')) {
     modrinth {
         detectLoaders.set(false)
-        token = System.getenv('MODRINTH_TOKEN')
+        token = System.getenv('MODRINTH_KEY')
         projectId = 'zg2tT2Vu'
         versionNumber = "$project.version"
         versionType = "${project.release_type}"

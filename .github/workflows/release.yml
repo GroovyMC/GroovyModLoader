@@ -45,8 +45,8 @@
                         "CENTRAL_MAVEN_PASSWORD": "${{ secrets.CENTRAL_MAVEN_PASSWORD }}",
                         "GPG_SIGNING_KEY": "${{ secrets.GPG_SIGNING_KEY }}",
                         "GPG_KEY_PASSWORD": "${{ secrets.GPG_KEY_PASSWORD }}",
-                        "CURSEFORGE_TOKEN": "${{ secrets.CURSEFORGE_TOKEN }}",
-                        "MODRINTH_TOKEN": "${{ secrets.MODRINTH_TOKEN }}"
+                        "CURSEFORGE_KEY": "${{ secrets.CURSEFORGE_KEY }}",
+                        "MODRINTH_KEY": "${{ secrets.MODRINTH_KEY }}"
                     }
                 },
                 {
@@ -58,8 +58,8 @@
                         "CENTRAL_MAVEN_PASSWORD": "${{ secrets.CENTRAL_MAVEN_PASSWORD }}",
                         "GPG_SIGNING_KEY": "${{ secrets.GPG_SIGNING_KEY }}",
                         "GPG_KEY_PASSWORD": "${{ secrets.GPG_KEY_PASSWORD }}",
-                        "CURSEFORGE_TOKEN": "${{ secrets.CURSEFORGE_TOKEN }}",
-                        "MODRINTH_TOKEN": "${{ secrets.MODRINTH_TOKEN }}"
+                        "CURSEFORGE_KEY": "${{ secrets.CURSEFORGE_KEY }}",
+                        "MODRINTH_KEY": "${{ secrets.MODRINTH_KEY }}"
                     }
                 },
                 {
@@ -74,8 +74,8 @@
                         "CENTRAL_MAVEN_PASSWORD": "${{ secrets.CENTRAL_MAVEN_PASSWORD }}",
                         "GPG_SIGNING_KEY": "${{ secrets.GPG_SIGNING_KEY }}",
                         "GPG_KEY_PASSWORD": "${{ secrets.GPG_KEY_PASSWORD }}",
-                        "CURSEFORGE_TOKEN": "${{ secrets.CURSEFORGE_TOKEN }}",
-                        "MODRINTH_TOKEN": "${{ secrets.MODRINTH_TOKEN }}"
+                        "CURSEFORGE_KEY": "${{ secrets.CURSEFORGE_KEY }}",
+                        "MODRINTH_KEY": "${{ secrets.MODRINTH_KEY }}"
                     }
                 }
             ]
