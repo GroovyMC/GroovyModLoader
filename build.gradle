@@ -1,215 +1,248 @@
-import com.matyrobbrt.gradle.jarinjar.task.*
-import com.matyrobbrt.gradle.jarinjar.transform.ForgeManifestFixerTransformer
-import net.darkhax.curseforgegradle.TaskPublishCurseForge
-import org.eclipse.jgit.api.Git
+import com.matyrobbrt.gradle.jarinjar.task.ForgeJarInJarTask
 
 plugins {
+    id 'java-library'
+    id 'net.neoforged.gradle.userdev' version '7.0.96'
     id 'groovy'
-    id 'maven-publish'
     id 'signing'
-    id 'org.cadixdev.licenser' version '0.6.1'
-    id 'com.matyrobbrt.jarinjar' version '1.2.+'
-    id 'net.minecraftforge.gradle' version '5.1.+'
-    id 'org.groovymc.simpleci' version '0.2.+'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
-    id 'com.modrinth.minotaur' version "${minotaur_version}"
-    id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
-    id 'net.darkhax.curseforgegradle' version "${cursegradle_version}"
-    id 'io.github.gradle-nexus.publish-plugin' version '1.3.0'
+    id 'maven-publish'
+    id 'com.matyrobbrt.jarinjar' version '1.2.0'
+    id 'org.groovymc.modsdotgroovy' version '2.0.0-beta.16'
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0-rc-1'
+    id 'dev.lukebemish.managedversioning' version '1.2.7'
 }
 
-archivesBaseName = 'gml'
 group = 'org.groovymc.gml'
 
-versioning {
-    fromTag.set('4.0')
-}
-final calculatedVersion = Git.open(rootProject.projectDir).withCloseable {
-    versioning.calculateVersion(it) { cm, info -> }
-}
-project.ext.versionBasedReleaseType = calculatedVersion.alphaBeta.betaNumber != -1 ? 'beta' : (calculatedVersion.alphaBeta.alphaNumber != -1 ? 'alpha' : 'release')
-allprojects { Project proj ->
-    println("${proj.name} version: ${proj.version = calculatedVersion.toString()}")
+base {
+    archivesName = 'gml'
 }
 
-project.ext.groovyLibs = [
-        'stdlib', 'contracts', 'datetime',
-        'nio', 'macro', 'macro-library',
-        'templates', 'typecheckers',
+java.withSourcesJar()
 
-        'dateutil', 'ginq',
+managedVersioning {
+    versionFile.set rootProject.file('version.properties')
 
-        'toml', 'json'
-]
-project.ext.manifestAttr = [
+    gitHubActions {
+        release {
+            prettyName.set 'Release'
+            workflowDispatch.set(true)
+            gradleJob {
+                name.set 'build'
+                step {
+                    setupGitUser()
+                }
+                readOnly.set false
+                gradlew 'Tag Release', 'tagRelease'
+                gradlew 'Build', 'build'
+                gradlew 'Publish', 'publish', 'closeAndReleaseSonatypeStagingRepository'
+                step {
+                    run.set 'git push && git push --tags'
+                }
+                secret('CENTRAL_MAVEN_USER')
+                secret('CENTRAL_MAVEN_PASSWORD')
+                secret('GPG_SIGNING_KEY')
+                secret('GPG_KEY_PASSWORD')
+            }
+        }
+    }
+}
+
+managedVersioning.apply()
+
+println "Building: $version"
+
+// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+sourceSets.each {
+    def localRuntime = configurations.maybeCreate(it.getTaskName(null, 'localRuntime'))
+    configurations.named(it.runtimeClasspathConfigurationName).configure {
+        extendsFrom localRuntime
+    }
+}
+
+configurations {
+    javadocElements {
+        canBeConsumed = true
+        canBeResolved = false
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.class, Usage.JAVA_RUNTIME))
+            attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.class, Category.DOCUMENTATION))
+            attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.class, Bundling.EXTERNAL))
+            attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.class, DocsType.JAVADOC))
+        }
+    }
+    include
+    expose
+    compileOnlyApi.extendsFrom expose
+    localRuntime.extendsFrom expose
+}
+
+tasks.register('fullJar', ForgeJarInJarTask)
+
+runs {
+    client {
+    }
+
+    server {
+        programArgument '--nogui'
+    }
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:20.4.196"
+
+    // TODO: remove and update in GML-core
+    compileOnly "org.groovymc:groovybundler:2.1.2"
+
+    expose "org.groovymc.gml:gml-core:${project.gml_core_version}"
+    expose "org.groovymc.cgl:cgl-1.20.4-neoforge:${project.cgl_version}"
+
+    include("org.groovymc.gml:gml-core:${project.gml_core_version}") {
+        transitive = false
+    }
+    include("org.groovymc.cgl:cgl-1.20.4-neoforge:${project.cgl_version}") {
+        transitive = false
+    }
+}
+
+sourceSets.each {
+    tasks.named(it.compileJavaTaskName, JavaCompile).configure {
+        options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    }
+}
+
+final manifestAttr = [
         'Specification-Title'   : 'GroovyModLoader',
         'Specification-Vendor'  : 'GroovyMC',
         'Specification-Version' : 1,
         'Implementation-Title'  : project.name,
         'Implementation-Version': project.version,
         'Implementation-Vendor' : 'GroovyMC',
-        'BundledGroovyVersion'  : project.groovy_version,
-        'GitCommit'             : getGitCommit(),
-        'FMLModType'            : 'LANGPROVIDER',
-        'Built-on-Minecraft'    : project.mc_version
+        'GitCommit'             : managedVersioning.hash
 ]
 
-apply from: 'gradle/projectSetup.gradle'
-apply from: 'gradle/mdg.gradle'
-apply from: 'gradle/jars.gradle'
-apply from: 'gradle/compiler.gradle'
-
-tasks.register('publishCurseForge', TaskPublishCurseForge)
-tasks.register('fullJar', ForgeJarInJarTask)
-tasks.register('jijtestJar', ForgeJarInJarTask)
-apply from: 'gradle/minecraft.gradle'
-apply from: 'gradle/publishing.gradle'
-
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-
-allprojects {
-    afterEvaluate {
-        license {
-            header = rootProject.file('license-header.txt')
-            exclude('**/mods.groovy')
-        }
-    }
+processResources {
+    exclude 'mods.groovy'
 }
 
-repositories {
-    maven {
-        name = 'Modding Inquisition Releases'
-        url = 'https://maven.moddinginquisition.org/releases'
-    }
-}
-
-jij.onConfiguration('groovy') {
-    final manifestFix = new ForgeManifestFixerTransformer(modType: 'LIBRARY', modulePrefix: 'org.groovymc.gml.groovyjij')
-    eachMatching('.+') {
-        versionRange nextMajor
-        transform manifestFix
-    }
-}
-
-jij.onConfiguration('includeLibrary') {
-    final manifestFix = new ForgeManifestFixerTransformer(modType: 'LIBRARY', modulePrefix: 'org.groovymc.gml.srgutilsjij')
-    eachMatching('.+') {
-        transform manifestFix
-    }
-}
-
-jij.onConfiguration('modsDotGroovy') {
-    eachMatching('.+') {
-        path = 'mdg-dsl.jar'
-        includeMetadata = false
-    }
-}
-
-dependencies {
-    minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
-
-    project.ext.groovyLibs.each {
-        groovy groovyDep(it as String)
-    }
-
-    compileOnly sourceSets.extension.output
-
-    transformCompileOnly sourceSets.main.output
-
-    testCompileOnly sourceSets.main.output
-    testCompileOnly modsDotGroovy.mdgDsl()
-
-    modCompileOnly sourceSets.main.output
-
-    compileOnly 'com.matyrobbrt.enhancedgroovy:dsl:0.2.0'
-    include("org.groovymc.cgl:cgl-${cgl_mc_version}-forge:${cgl_version}") {
-        jij.onDependency(it as Dependency) {
-            versionRange nextMajor
-        }
-    }
-
-    implementation("net.minecraftforge:srgutils:${srgutils_version}")
-    includeLibrary("net.minecraftforge:srgutils:${srgutils_version}") {
-        jij.onDependency(it as Dependency) {
-            versionRange nextMajor
-        }
-    }
-}
-
-String groovyDep(final String name) {
-    return "${groovyId(name)}:${project.groovy_version}"
-}
-
-static String groovyId(final String name) {
-    return "org.apache.groovy:groovy${name == 'stdlib' ? '' : '-' + name}"
-}
-
-tasks.register('makeReadme', Copy) {
-    final groovyLibsAsString = project.ext.groovyLibs.join(', ')
-    final expands = [
-            'groovyVersion': project.groovy_version,
-            'groovyLibs'   : groovyLibsAsString,
-
-            'gmlVersion'   : '${gmlVersion}', // Thanks Gradle...
-            'header'       : '<!-- This file is automatically generated, make any modifications to it in the `templates/README.MD` file, and then run the `makeReadme` Gradle task -->'
-    ]
-    it.inputs.properties expands
-
-    it.from('templates/README.MD') {
-        expand expands
-    }
-    it.destinationDir(project.rootDir)
-}
-
-tasks.register('groovyJar', ForgeJarInJarTask) {
-    group('build')
-    archiveBaseName.set('groovy-fat')
-    fromConfiguration(project.configurations.groovy)
-    manifest.attributes(manifestAttr + [
-            'Specification-Title': 'GML-GroovyFatJar',
-            'Automatic-Module-Name': 'org.groovymc.gml.groovyjij'
-    ])
+tasks.named('jar', Jar).configure {
+    manifest.attributes(manifestAttr)
+    archiveClassifier = 'slim'
 }
 
 tasks.named('fullJar', ForgeJarInJarTask).configure {
-    from(sourceSets.main.output)
-    from(sourceSets.transform.output)
-    from(sourceSets.extension.output)
-    manifest.attributes(manifestAttr + [
-            'Automatic-Module-Name': 'org.groovymc.gml', 'FMLModType': 'LANGPROVIDER'
-    ])
-    archiveClassifier.set('all')
+    from(zipTree(tasks.jar.archiveFile))
+    dependsOn tasks.jar
+    manifest.attributes(manifestAttr)
+    archiveClassifier.set('')
     group('build')
-
-    fromJar(tasks.named('modJar')) { versionRange nextMajor }
-    fromJar(tasks.named('groovyJar')) { versionRange nextMajor }
     fromConfiguration(project.configurations.include)
-    fromConfiguration(project.configurations.includeLibrary)
-    fromConfiguration(project.configurations.modsDotGroovy)
 
     tasks.build.dependsOn(it)
 }
-project(':script-mods').afterEvaluate {
-    rootProject.tasks.named('fullJar', ForgeJarInJarTask) {
-        fromJar(project(':script-mods').tasks.shadowJar as org.gradle.jvm.tasks.Jar) { versionRange nextMajor }
+
+tasks.withType(GroovyCompile).configureEach { GroovyCompile task ->
+    task.groovyOptions.fork = true
+    task.groovyOptions.encoding = 'UTF-8'
+    task.groovyOptions.optimizationOptions.indy = true
+}
+
+groovydoc {
+    use = true
+}
+
+tasks.register('groovydocJar', Jar) {
+    archiveClassifier = 'javadoc'
+    from groovydoc.destinationDir
+    dependsOn(groovydoc)
+}
+
+tasks.named('build').configure {
+    dependsOn tasks.groovydocJar
+}
+
+configurations.runtimeElements.artifacts.clear()
+configurations.apiElements.artifacts.clear()
+
+artifacts {
+    javadocElements groovydocJar
+    runtimeElements fullJar
+    apiElements fullJar
+}
+
+project.components.named("java").configure {
+    AdhocComponentWithVariants javaComponent = (AdhocComponentWithVariants) it
+    javaComponent.addVariantsFromConfiguration(configurations.javadocElements) {}
+}
+
+void sharedMetadata(MavenPom it) {
+    it.packaging = 'jar'
+    it.url = 'https://github.com/GroovyMC/GroovyModLoader'
+    it.inceptionYear = '2022'
+    it.licenses {
+        license {
+            name = 'MIT'
+            url = 'https://opensource.org/license/mit/'
+        }
+    }
+    it.developers {
+        developer {
+            id = 'groovymc'
+            name = 'GroovyMC'
+            email = 'holdings@groovymc.org'
+            url = 'https://github.com/GroovyMC/'
+        }
+    }
+    it.scm {
+        connection='scm:git:git://github.com/GroovyMC/GroovyModLoader.git'
+        url='https://github.com/GroovyMC/GroovyModLoader'
     }
 }
 
-tasks.named('jijtestJar', ForgeJarInJarTask).configure {
-    archiveBaseName.set('jijtest')
-    fromJar(tasks.named('fullJar'))
-    manifest.attributes([
-            'Implementation-Version': project.version,
-            'Automatic-Module-Name' : 'org.groovymc.gml.jijtest',
-            'FMLModType'            : 'LANGPROVIDER'
-    ])
+nexusPublishing {
+    repositories {
+        sonatype {
+            username.set(System.getenv('CENTRAL_MAVEN_USER') ?: '')
+            password.set(System.getenv('CENTRAL_MAVEN_PASSWORD') ?: '')
+            nexusUrl.set(uri("https://s01.oss.sonatype.org/service/local/"))
+        }
+    }
 }
 
-static String getGitCommit() {
-    final proc = 'git rev-parse --short HEAD'.execute()
-    proc.waitFor()
-    return proc.exitValue() ? "ERROR(${proc.exitValue()})" : proc.text.trim()
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+            it.artifactId = base.archivesName.get()
+
+            pom {
+                name = 'GML'
+                description = 'A language provider for NeoForge mods for Groovy'
+                sharedMetadata(it)
+            }
+        }
+    }
+    repositories {
+        maven {
+            name 'repo'
+            url file('repo')
+        }
+    }
+}
+
+if (System.getenv('GPG_SIGNING_KEY')) {
+    signing {
+        final signingKey = System.getenv('GPG_SIGNING_KEY') ?: ''
+        final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.mavenJava
+        sign publishing.publications.transform
+    }
 }

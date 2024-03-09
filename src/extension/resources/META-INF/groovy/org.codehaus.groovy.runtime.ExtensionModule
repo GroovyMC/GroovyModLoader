@@ -1,4 +1,0 @@
-moduleName=gml-extensions
-moduleVersion=1.0.0
-extensionClasses=org.groovymc.gml.extensions.EventBusExtensions
-staticExtensionClasses=
