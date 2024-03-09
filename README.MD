@@ -1,4 +1,5 @@
 # GroovyModLoader
+[![GML Version](https://img.shields.io/badge/dynamic/xml?style=for-the-badge&color=red&label=Latest%20GML%20Version&prefix=v&query=metadata//latest&url=https://repo.maven.apache.org/maven2/org/groovymc/gml/gml/maven-metadata.xml)](https://central.sonatype.com/artifact/org.groovymc.gml/gml)
 GroovyModLoader (GML) is a NeoForge language loader for Groovy mods.
 ## How to use
 To use this language provider, simply add it as a dependency in your build script. The
@@ -58,6 +59,7 @@ The major GML version is bumped every MC version. Below you can find a list of M
 - `1.19.4` -> `3.x.x`
 - `1.20.0` -> `4.x.x`
 - `1.20.4` -> `5.x.x`
+
 **NOTE**: 1.19.2 - 1.19.4 versions use the `com.matyrobbrt.gml` artifact group.
 
 ## Shading GML
