@@ -9,7 +9,9 @@ plugins {
     id 'com.matyrobbrt.jarinjar' version '1.2.0'
     id 'org.groovymc.modsdotgroovy' version '2.0.0-beta.16'
     id 'io.github.gradle-nexus.publish-plugin' version '2.0.0-rc-1'
-    id 'dev.lukebemish.managedversioning' version '1.2.7'
+    id 'dev.lukebemish.managedversioning' version '1.2.8'
+    id 'com.modrinth.minotaur' version '2.8.4'
+    id 'net.darkhax.curseforgegradle' version '1.1.16'
 }
 
 group = 'org.groovymc.gml'
@@ -35,14 +37,16 @@ managedVersioning {
                 readOnly.set false
                 gradlew 'Tag Release', 'tagRelease'
                 gradlew 'Build', 'build'
-                gradlew 'Publish', 'publish', 'closeAndReleaseSonatypeStagingRepository'
                 step {
                     run.set 'git push && git push --tags'
                 }
+                gradlew 'Publish', 'publish', 'closeAndReleaseSonatypeStagingRepository', 'curseforge', 'modrinth'
                 secret('CENTRAL_MAVEN_USER')
                 secret('CENTRAL_MAVEN_PASSWORD')
                 secret('GPG_SIGNING_KEY')
                 secret('GPG_KEY_PASSWORD')
+                secret('CURSEFORGE_TOKEN')
+                secret('MODRINTH_TOKEN')
             }
         }
     }
@@ -87,6 +91,10 @@ configurations {
 tasks.register('fullJar', ForgeJarInJarTask)
 
 runs {
+    configureEach {
+        modSource project.sourceSets.main
+    }
+
     client {
     }
 
@@ -96,7 +104,7 @@ runs {
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:20.4.196"
+    implementation "net.neoforged:neoforge:${project.neo_version}"
 
     // TODO: remove and update in GML-core
     compileOnly "org.groovymc:groovybundler:2.1.2"
@@ -244,5 +252,43 @@ if (System.getenv('GPG_SIGNING_KEY')) {
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign publishing.publications.mavenJava
         sign publishing.publications.transform
+    }
+}
+
+// Publishing
+
+def mcVersion() {
+    String[] parts = project.neo_version.split('\\.')
+    "1.${parts[0]}.${parts[1]}"
+}
+
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+
+if (System.getenv('CURSEFORGE_TOKEN')) {
+    tasks.register('curseforge', TaskPublishCurseForge) {
+        dependsOn tasks.fullJar
+        disableVersionDetection()
+        apiToken = System.getenv('CURSEFORGE_TOKEN')
+        def projectId = '661517'
+        def mainFile = upload(projectId, tasks.fullJar)
+        mainFile.displayName = "gml-$project.version"
+        mainFile.releaseType = "${project.release_type}"
+        mainFile.addModLoader('NeoForge')
+        mainFile.addGameVersion(mcVersion())
+        mainFile.changelog = ''
+    }
+}
+
+if (System.getenv('MODRINTH_TOKEN')) {
+    modrinth {
+        detectLoaders.set(false)
+        token = System.getenv('MODRINTH_TOKEN')
+        projectId = 'zg2tT2Vu'
+        versionNumber = "$project.version"
+        versionType = "${project.release_type}"
+        detectLoaders = false
+        uploadFile = fullJar
+        gameVersions = [mcVersion()]
+        loaders = ['neoforge']
     }
 }
