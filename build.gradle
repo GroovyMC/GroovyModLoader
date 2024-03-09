@@ -247,7 +247,6 @@ if (System.getenv('GPG_SIGNING_KEY')) {
         final signingPassword = System.getenv('GPG_KEY_PASSWORD') ?: ''
         useInMemoryPgpKeys(signingKey, signingPassword)
         sign publishing.publications.mavenJava
-        sign publishing.publications.transform
     }
 }
 
