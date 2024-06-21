@@ -36,6 +36,7 @@ managedVersioning {
             workflowDispatch.set(true)
             gradleJob {
                 name.set 'build'
+                javaVersion = '21'
                 step {
                     setupGitUser()
                 }
@@ -61,7 +62,6 @@ managedVersioning.apply()
 
 println "Building: $version"
 
-// Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 repositories {
