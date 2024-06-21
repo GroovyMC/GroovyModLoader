@@ -259,7 +259,7 @@ if (System.getenv('GPG_SIGNING_KEY')) {
 
 def mcVersion() {
     String[] parts = project.neo_version.split('\\.')
-    "1.${parts[0]}.${parts[1]}"
+    "1.${parts[0]}${parts[1] == '0' ? '' : ".${parts[1]}"}"
 }
 
 import net.darkhax.curseforgegradle.TaskPublishCurseForge
