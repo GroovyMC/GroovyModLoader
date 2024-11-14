@@ -2,14 +2,14 @@ import com.matyrobbrt.gradle.jarinjar.task.ForgeJarInJarTask
 
 plugins {
     id 'java-library'
-    id 'net.neoforged.gradle.userdev' version '7.0.145'
     id 'groovy'
     id 'signing'
     id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.37-beta'
     id 'com.matyrobbrt.jarinjar' version '1.2.0'
-    id 'org.groovymc.modsdotgroovy' version '2.0.0-beta.29'
-    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0-rc-1'
-    id 'dev.lukebemish.managedversioning' version '1.2.8'
+    id 'org.groovymc.modsdotgroovy' version '2.0.0-beta.30'
+    id 'io.github.gradle-nexus.publish-plugin' version '2.0.0'
+    id 'dev.lukebemish.managedversioning' version '1.2.26'
     id 'com.modrinth.minotaur' version '2.8.4'
     id 'net.darkhax.curseforgegradle' version '1.1.16'
 }
@@ -94,22 +94,19 @@ configurations {
 
 tasks.register('fullJar', ForgeJarInJarTask)
 
-runs {
-    configureEach {
-        modSource project.sourceSets.main
-    }
-
-    client {
-    }
-
-    server {
-        programArgument '--nogui'
-    }
+neoForge {
+    version = project.neo_version
+	mods.create('gml') {
+	    sourceSet(sourceSets.main)
+	}
+	runs {
+		client {
+			client()
+		}
+	}
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:${project.neo_version}"
-
     expose "org.groovymc.gml:gml-core:${project.gml_core_version}"
     expose "org.groovymc.cgl:cgl-1.21-neoforge:${project.cgl_version}"
 
